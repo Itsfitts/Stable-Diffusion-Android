@@ -26,8 +26,12 @@ import com.shifthackz.aisdv1.domain.usecase.connectivity.TestOpenAiApiKeyUseCase
 import com.shifthackz.aisdv1.domain.usecase.connectivity.TestOpenAiApiKeyUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.connectivity.TestStabilityAiApiKeyUseCase
 import com.shifthackz.aisdv1.domain.usecase.connectivity.TestStabilityAiApiKeyUseCaseImpl
+import com.shifthackz.aisdv1.domain.usecase.connectivity.TestSwarmUiConnectivityUseCase
+import com.shifthackz.aisdv1.domain.usecase.connectivity.TestSwarmUiConnectivityUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.debug.DebugInsertBadBase64UseCase
 import com.shifthackz.aisdv1.domain.usecase.debug.DebugInsertBadBase64UseCaseImpl
+import com.shifthackz.aisdv1.domain.usecase.donate.FetchAndGetSupportersUseCase
+import com.shifthackz.aisdv1.domain.usecase.donate.FetchAndGetSupportersUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.downloadable.DeleteModelUseCase
 import com.shifthackz.aisdv1.domain.usecase.downloadable.DeleteModelUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.downloadable.DownloadModelUseCase
@@ -36,10 +40,16 @@ import com.shifthackz.aisdv1.domain.usecase.downloadable.GetLocalAiModelsUseCase
 import com.shifthackz.aisdv1.domain.usecase.downloadable.GetLocalAiModelsUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.downloadable.ObserveLocalAiModelsUseCase
 import com.shifthackz.aisdv1.domain.usecase.downloadable.ObserveLocalAiModelsUseCaseImpl
+import com.shifthackz.aisdv1.domain.usecase.gallery.DeleteAllGalleryUseCase
+import com.shifthackz.aisdv1.domain.usecase.gallery.DeleteAllGalleryUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.gallery.DeleteGalleryItemUseCase
 import com.shifthackz.aisdv1.domain.usecase.gallery.DeleteGalleryItemUseCaseImpl
+import com.shifthackz.aisdv1.domain.usecase.gallery.DeleteGalleryItemsUseCase
+import com.shifthackz.aisdv1.domain.usecase.gallery.DeleteGalleryItemsUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.gallery.GetAllGalleryUseCase
 import com.shifthackz.aisdv1.domain.usecase.gallery.GetAllGalleryUseCaseImpl
+import com.shifthackz.aisdv1.domain.usecase.gallery.GetGalleryItemsUseCase
+import com.shifthackz.aisdv1.domain.usecase.gallery.GetGalleryItemsUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.gallery.GetMediaStoreInfoUseCase
 import com.shifthackz.aisdv1.domain.usecase.gallery.GetMediaStoreInfoUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.generation.GetGenerationResultPagedUseCase
@@ -86,6 +96,8 @@ import com.shifthackz.aisdv1.domain.usecase.settings.ConnectToOpenAiUseCase
 import com.shifthackz.aisdv1.domain.usecase.settings.ConnectToOpenAiUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.settings.ConnectToStabilityAiUseCase
 import com.shifthackz.aisdv1.domain.usecase.settings.ConnectToStabilityAiUseCaseImpl
+import com.shifthackz.aisdv1.domain.usecase.settings.ConnectToSwarmUiUseCase
+import com.shifthackz.aisdv1.domain.usecase.settings.ConnectToSwarmUiUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.settings.GetConfigurationUseCase
 import com.shifthackz.aisdv1.domain.usecase.settings.GetConfigurationUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.settings.SetServerConfigurationUseCase
@@ -96,6 +108,8 @@ import com.shifthackz.aisdv1.domain.usecase.stabilityai.FetchAndGetStabilityAiEn
 import com.shifthackz.aisdv1.domain.usecase.stabilityai.FetchAndGetStabilityAiEnginesUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.stabilityai.ObserveStabilityAiCreditsUseCase
 import com.shifthackz.aisdv1.domain.usecase.stabilityai.ObserveStabilityAiCreditsUseCaseImpl
+import com.shifthackz.aisdv1.domain.usecase.swarmmodel.FetchAndGetSwarmUiModelsUseCase
+import com.shifthackz.aisdv1.domain.usecase.swarmmodel.FetchAndGetSwarmUiModelsUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.wakelock.AcquireWakelockUseCase
 import com.shifthackz.aisdv1.domain.usecase.wakelock.AcquireWakelockUseCaseImpl
 import com.shifthackz.aisdv1.domain.usecase.wakelock.ReleaseWakeLockUseCase
@@ -110,12 +124,16 @@ internal val useCasesModule = module {
     factoryOf(::PingStableDiffusionServiceUseCaseImpl) bind PingStableDiffusionServiceUseCase::class
     factoryOf(::ClearAppCacheUseCaseImpl) bind ClearAppCacheUseCase::class
     factoryOf(::DataPreLoaderUseCaseImpl) bind DataPreLoaderUseCase::class
+    factoryOf(::FetchAndGetSwarmUiModelsUseCaseImpl) bind FetchAndGetSwarmUiModelsUseCase::class
     factoryOf(::GetStableDiffusionModelsUseCaseImpl) bind GetStableDiffusionModelsUseCase::class
     factoryOf(::SelectStableDiffusionModelUseCaseImpl) bind SelectStableDiffusionModelUseCase::class
     factoryOf(::GetGenerationResultPagedUseCaseImpl) bind GetGenerationResultPagedUseCase::class
     factoryOf(::GetAllGalleryUseCaseImpl) bind GetAllGalleryUseCase::class
+    factoryOf(::GetGalleryItemsUseCaseImpl) bind GetGalleryItemsUseCase::class
     factoryOf(::GetGenerationResultUseCaseImpl) bind GetGenerationResultUseCase::class
     factoryOf(::DeleteGalleryItemUseCaseImpl) bind DeleteGalleryItemUseCase::class
+    factoryOf(::DeleteGalleryItemsUseCaseImpl) bind DeleteGalleryItemsUseCase::class
+    factoryOf(::DeleteAllGalleryUseCaseImpl) bind DeleteAllGalleryUseCase::class
     factoryOf(::GetStableDiffusionSamplersUseCaseImpl) bind GetStableDiffusionSamplersUseCase::class
     factoryOf(::FetchAndGetLorasUseCaseImpl) bind FetchAndGetLorasUseCase::class
     factoryOf(::FetchAndGetHyperNetworksUseCaseImpl) bind FetchAndGetHyperNetworksUseCase::class
@@ -128,6 +146,7 @@ internal val useCasesModule = module {
     factoryOf(::TestHuggingFaceApiKeyUseCaseImpl) bind TestHuggingFaceApiKeyUseCase::class
     factoryOf(::TestOpenAiApiKeyUseCaseImpl) bind TestOpenAiApiKeyUseCase::class
     factoryOf(::TestStabilityAiApiKeyUseCaseImpl) bind TestStabilityAiApiKeyUseCase::class
+    factoryOf(::TestSwarmUiConnectivityUseCaseImpl) bind TestSwarmUiConnectivityUseCase::class
     factoryOf(::SaveGenerationResultUseCaseImpl) bind SaveGenerationResultUseCase::class
     factoryOf(::ObserveSeverConnectivityUseCaseImpl) bind ObserveSeverConnectivityUseCase::class
     factoryOf(::ObserveHordeProcessStatusUseCaseImpl) bind ObserveHordeProcessStatusUseCase::class
@@ -146,12 +165,14 @@ internal val useCasesModule = module {
     factoryOf(::ConnectToHordeUseCaseImpl) bind ConnectToHordeUseCase::class
     factoryOf(::ConnectToLocalDiffusionUseCaseImpl) bind ConnectToLocalDiffusionUseCase::class
     factoryOf(::ConnectToA1111UseCaseImpl) bind ConnectToA1111UseCase::class
+    factoryOf(::ConnectToSwarmUiUseCaseImpl) bind ConnectToSwarmUiUseCase::class
     factoryOf(::ConnectToHuggingFaceUseCaseImpl) bind ConnectToHuggingFaceUseCase::class
     factoryOf(::ConnectToOpenAiUseCaseImpl) bind ConnectToOpenAiUseCase::class
     factoryOf(::ConnectToStabilityAiUseCaseImpl) bind ConnectToStabilityAiUseCase::class
     factoryOf(::FetchAndGetHuggingFaceModelsUseCaseImpl) bind FetchAndGetHuggingFaceModelsUseCase::class
     factoryOf(::ObserveStabilityAiCreditsUseCaseImpl) bind ObserveStabilityAiCreditsUseCase::class
     factoryOf(::FetchAndGetStabilityAiEnginesUseCaseImpl) bind FetchAndGetStabilityAiEnginesUseCase::class
+    factoryOf(::FetchAndGetSupportersUseCaseImpl) bind FetchAndGetSupportersUseCase::class
 }
 
 internal val interActorsModule = module {

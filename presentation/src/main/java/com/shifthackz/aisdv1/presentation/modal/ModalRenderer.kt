@@ -12,18 +12,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
+import com.shifthackz.aisdv1.core.common.extensions.openAppSettings
 import com.shifthackz.aisdv1.core.model.UiText
+import com.shifthackz.aisdv1.core.model.asString
 import com.shifthackz.aisdv1.core.model.asUiText
-import com.shifthackz.aisdv1.presentation.R
+import com.shifthackz.aisdv1.domain.entity.AiGenerationResult
+import com.shifthackz.aisdv1.presentation.core.GenerationFormUpdateEvent
 import com.shifthackz.aisdv1.presentation.core.GenerationMviIntent
 import com.shifthackz.aisdv1.presentation.core.ImageToImageIntent
 import com.shifthackz.aisdv1.presentation.modal.crop.CropImageModal
 import com.shifthackz.aisdv1.presentation.modal.embedding.EmbeddingScreen
 import com.shifthackz.aisdv1.presentation.modal.extras.ExtrasScreen
+import com.shifthackz.aisdv1.presentation.modal.grid.GridBottomSheet
 import com.shifthackz.aisdv1.presentation.modal.history.InputHistoryScreen
 import com.shifthackz.aisdv1.presentation.modal.language.LanguageBottomSheet
+import com.shifthackz.aisdv1.presentation.modal.ldscheduler.LDSchedulerBottomSheet
 import com.shifthackz.aisdv1.presentation.modal.tag.EditTagDialog
 import com.shifthackz.aisdv1.presentation.model.Modal
+import com.shifthackz.aisdv1.presentation.screen.debug.DebugMenuIntent
 import com.shifthackz.aisdv1.presentation.screen.gallery.detail.GalleryDetailIntent
 import com.shifthackz.aisdv1.presentation.screen.gallery.list.GalleryIntent
 import com.shifthackz.aisdv1.presentation.screen.inpaint.InPaintIntent
@@ -33,10 +40,12 @@ import com.shifthackz.aisdv1.presentation.widget.dialog.DecisionInteractiveDialo
 import com.shifthackz.aisdv1.presentation.widget.dialog.ErrorDialog
 import com.shifthackz.aisdv1.presentation.widget.dialog.GenerationImageBatchResultModal
 import com.shifthackz.aisdv1.presentation.widget.dialog.GenerationImageResultDialog
+import com.shifthackz.aisdv1.presentation.widget.dialog.InfoDialog
 import com.shifthackz.aisdv1.presentation.widget.dialog.ProgressDialog
 import com.shifthackz.aisdv1.presentation.widget.dialog.ProgressDialogCancelButton
 import com.shifthackz.aisdv1.presentation.widget.input.DropdownTextField
 import com.shifthackz.android.core.mvi.MviIntent
+import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 
 @Composable
 fun ModalRenderer(
@@ -50,7 +59,9 @@ fun ModalRenderer(
         processIntent(GalleryIntent.DismissDialog)
         processIntent(GalleryDetailIntent.DismissDialog)
         processIntent(InPaintIntent.ScreenModal.Dismiss)
+        processIntent(DebugMenuIntent.DismissModal)
     }
+    val context = LocalContext.current
     when (screenModal) {
         Modal.None -> Unit
 
@@ -68,7 +79,7 @@ fun ModalRenderer(
         )
 
         Modal.LoadingRandomImage -> ProgressDialog(
-            titleResId = R.string.communicating_random_image_title,
+            titleResId = LocalizationR.string.communicating_random_image_title,
             canDismiss = false,
         ) {
             ProgressDialogCancelButton {
@@ -82,9 +93,16 @@ fun ModalRenderer(
         )
 
         is Modal.Generating -> ProgressDialog(
-            titleResId = R.string.communicating_local_title,
+            titleResId = LocalizationR.string.communicating_local_title,
             canDismiss = false,
             step = screenModal.pair,
+            content = screenModal.canCancel.takeIf { it }?.let {
+                {
+                    ProgressDialogCancelButton {
+                        processIntent(GenerationMviIntent.Cancel.Generation)
+                    }
+                }
+            },
         )
 
         is Modal.Image.Single -> GenerationImageResultDialog(
@@ -121,7 +139,15 @@ fun ModalRenderer(
         ) {
             InputHistoryScreen(
                 onGenerationSelected = { ai ->
-                    processIntent(GenerationMviIntent.UpdateFromGeneration(ai))
+                    val payload = when (screenModal.source) {
+                        AiGenerationResult.Type.TEXT_TO_IMAGE -> {
+                            GenerationFormUpdateEvent.Payload.T2IForm(ai)
+                        }
+                        AiGenerationResult.Type.IMAGE_TO_IMAGE -> {
+                            GenerationFormUpdateEvent.Payload.I2IForm(ai, false)
+                        }
+                    }
+                    processIntent(GenerationMviIntent.UpdateFromGeneration(payload))
                     processIntent(GenerationMviIntent.SetModal(Modal.None))
                 },
             )
@@ -147,10 +173,10 @@ fun ModalRenderer(
         )
 
         is Modal.ClearAppCache -> DecisionInteractiveDialog(
-            title = R.string.title_clear_app_cache.asUiText(),
-            text = R.string.interaction_cache_sub_title.asUiText(),
-            confirmActionResId = R.string.yes,
-            dismissActionResId = R.string.no,
+            title = LocalizationR.string.title_clear_app_cache.asUiText(),
+            text = LocalizationR.string.interaction_cache_sub_title.asUiText(),
+            confirmActionResId = LocalizationR.string.yes,
+            dismissActionResId = LocalizationR.string.no,
             onDismissRequest = dismiss,
             onConfirmAction = { processIntent(SettingsIntent.Action.ClearAppCache.Confirm) },
         )
@@ -158,43 +184,71 @@ fun ModalRenderer(
         is Modal.SelectSdModel -> {
             var selectedItem by remember { mutableStateOf(screenModal.selected) }
             DecisionInteractiveDialog(
-                title = R.string.title_select_sd_model.asUiText(),
+                title = LocalizationR.string.title_select_sd_model.asUiText(),
                 text = UiText.empty,
-                confirmActionResId = R.string.action_select,
+                confirmActionResId = LocalizationR.string.action_select,
                 onConfirmAction = { processIntent(SettingsIntent.SdModel.Select(selectedItem)) },
                 onDismissRequest = dismiss,
                 content = {
                     DropdownTextField(
                         modifier = Modifier.fillMaxWidth(),
-                        label = R.string.hint_sd_model.asUiText(),
+                        label = LocalizationR.string.hint_sd_model.asUiText(),
                         value = selectedItem,
                         items = screenModal.models,
                         onItemSelected = { selectedItem = it },
                     )
-                }
+                },
             )
         }
 
-        Modal.DeleteImageConfirm -> DecisionInteractiveDialog(
-            title = R.string.interaction_delete_generation_title.asUiText(),
-            text = R.string.interaction_delete_generation_sub_title.asUiText(),
-            confirmActionResId = R.string.yes,
-            dismissActionResId = R.string.no,
-            onConfirmAction = { processIntent(GalleryDetailIntent.Delete.Confirm) },
+        is Modal.DeleteImageConfirm -> DecisionInteractiveDialog(
+            title = when {
+                screenModal.isAll -> LocalizationR.string.interaction_delete_all_title
+                screenModal.isMultiple ->  LocalizationR.string.interaction_delete_selection_title
+                else -> LocalizationR.string.interaction_delete_generation_title
+            }.asUiText(),
+            text = when {
+                screenModal.isAll -> LocalizationR.string.interaction_delete_all_sub_title
+                screenModal.isMultiple ->  LocalizationR.string.interaction_delete_selection_sub_title
+                else -> LocalizationR.string.interaction_delete_generation_sub_title
+            }.asUiText(),
+            confirmActionResId = LocalizationR.string.yes,
+            dismissActionResId = LocalizationR.string.no,
+            onConfirmAction = {
+                val intent = if (screenModal.isAll) {
+                    GalleryIntent.Delete.All.Confirm
+                } else if (screenModal.isMultiple) {
+                    GalleryIntent.Delete.Selection.Confirm
+                } else {
+                    GalleryDetailIntent.Delete.Confirm
+                }
+                processIntent(intent)
+            },
             onDismissRequest = dismiss,
         )
 
-        Modal.ConfirmExport -> DecisionInteractiveDialog(
-            title = R.string.interaction_export_title.asUiText(),
-            text = R.string.interaction_export_sub_title.asUiText(),
-            confirmActionResId = R.string.action_export,
-            onConfirmAction = { processIntent(GalleryIntent.Export.Confirm) },
+        is Modal.ConfirmExport -> DecisionInteractiveDialog(
+            title = LocalizationR.string.interaction_export_title.asUiText(),
+            text = if (screenModal.exportAll) {
+                LocalizationR.string.interaction_export_sub_title
+            } else {
+                LocalizationR.string.interaction_export_sub_title_selection
+            }.asUiText(),
+            confirmActionResId = LocalizationR.string.action_export,
+            onConfirmAction = {
+                val intent = if (screenModal.exportAll) {
+                    GalleryIntent.Export.All.Confirm
+                } else {
+                    GalleryIntent.Export.Selection.Confirm
+                }
+                processIntent(intent)
+            },
             onDismissRequest = dismiss,
         )
 
-        Modal.ExportInProgress ->  ProgressDialog(
-            titleResId = R.string.exporting_progress_title,
-            subTitleResId = R.string.exporting_progress_sub_title,
+        Modal.ExportInProgress -> ProgressDialog(
+            titleResId = LocalizationR.string.exporting_progress_title,
+            subTitleResId = LocalizationR.string.exporting_progress_sub_title,
             canDismiss = false,
         )
 
@@ -217,22 +271,22 @@ fun ModalRenderer(
         }
 
         is Modal.DeleteLocalModelConfirm -> DecisionInteractiveDialog(
-            title = R.string.interaction_delete_local_model_title.asUiText(),
+            title = LocalizationR.string.interaction_delete_local_model_title.asUiText(),
             text = UiText.Resource(
-                R.string.interaction_delete_local_model_sub_title,
+                LocalizationR.string.interaction_delete_local_model_sub_title,
                 screenModal.model.name,
             ),
-            confirmActionResId = R.string.yes,
-            dismissActionResId = R.string.no,
+            confirmActionResId = LocalizationR.string.yes,
+            dismissActionResId = LocalizationR.string.no,
             onConfirmAction = { processIntent(ServerSetupIntent.LocalModel.DeleteConfirm(screenModal.model)) },
             onDismissRequest = dismiss,
         )
 
         Modal.ClearInPaintConfirm -> DecisionInteractiveDialog(
-            title = R.string.interaction_in_paint_clear_title.asUiText(),
-            text = R.string.interaction_in_paint_clear_title.asUiText(),
-            confirmActionResId = R.string.yes,
-            dismissActionResId = R.string.no,
+            title = LocalizationR.string.interaction_in_paint_clear_title.asUiText(),
+            text = LocalizationR.string.interaction_in_paint_clear_title.asUiText(),
+            confirmActionResId = LocalizationR.string.yes,
+            dismissActionResId = LocalizationR.string.no,
             onConfirmAction = { processIntent(InPaintIntent.Action.Clear) },
             onDismissRequest = dismiss,
         )
@@ -240,7 +294,66 @@ fun ModalRenderer(
         is Modal.Image.Crop -> CropImageModal(
             bitmap = screenModal.bitmap,
             onDismissRequest = dismiss,
-            onResult = { processIntent(ImageToImageIntent.UpdateImage(it)) }
+            onResult = { processIntent(ImageToImageIntent.UpdateImage(it)) },
         )
+
+        Modal.ConnectLocalHost -> DecisionInteractiveDialog(
+            title = LocalizationR.string.interaction_warning_title.asUiText(),
+            text = LocalizationR.string.interaction_warning_localhost_sub_title.asUiText(),
+            confirmActionResId = LocalizationR.string.action_connect,
+            dismissActionResId = LocalizationR.string.cancel,
+            onConfirmAction = { processIntent(ServerSetupIntent.ConnectToLocalHost) },
+            onDismissRequest = dismiss,
+        )
+
+        Modal.Background.Running -> InfoDialog(
+            title = LocalizationR.string.interaction_background_running_title.asUiText(),
+            subTitle = LocalizationR.string.interaction_background_running_sub_title.asUiText(),
+            onDismissRequest = dismiss,
+        )
+
+        Modal.Background.Scheduled -> InfoDialog(
+            title = LocalizationR.string.interaction_background_scheduled_title.asUiText(),
+            subTitle = LocalizationR.string.interaction_background_scheduled_sub_title.asUiText(),
+            onDismissRequest = dismiss,
+        )
+
+        is Modal.ManualPermission -> InfoDialog(
+            title = LocalizationR.string.premission_rationale_title.asUiText(),
+            subTitle = UiText.Resource(
+                LocalizationR.string.premission_rationale_sub_title,
+                screenModal.permission.asString(),
+            ),
+            onDismissRequest = {
+                dismiss()
+                context.openAppSettings()
+            },
+        )
+
+        is Modal.GalleryGrid -> ModalBottomSheet(
+            onDismissRequest = dismiss,
+            shape = RectangleShape,
+        ) {
+            GridBottomSheet(
+                currentGrid = screenModal.grid,
+                onSelected = {
+                    processIntent(SettingsIntent.Action.GalleryGrid.Set(it))
+                    dismiss()
+                }
+            )
+        }
+
+        is Modal.LDScheduler -> ModalBottomSheet(
+            onDismissRequest = dismiss,
+            shape = RectangleShape,
+        ) {
+            LDSchedulerBottomSheet(
+                currentScheduler = screenModal.scheduler,
+                onSelected = {
+                    processIntent(DebugMenuIntent.LocalDiffusionScheduler.Confirm(it))
+                    dismiss()
+                }
+            )
+        }
     }
 }

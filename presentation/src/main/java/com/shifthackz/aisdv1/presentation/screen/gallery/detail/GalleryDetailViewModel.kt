@@ -47,7 +47,9 @@ class GalleryDetailViewModel(
                 emitEffect(GalleryDetailEffect.ShareClipBoard(intent.content.toString()))
             }
 
-            GalleryDetailIntent.Delete.Request -> setActiveModal(Modal.DeleteImageConfirm)
+            GalleryDetailIntent.Delete.Request -> setActiveModal(
+                Modal.DeleteImageConfirm(false, isMultiple = false)
+            )
 
             GalleryDetailIntent.Delete.Confirm -> {
                 setActiveModal(Modal.None)
@@ -76,12 +78,20 @@ class GalleryDetailViewModel(
 
             GalleryDetailIntent.DismissDialog -> setActiveModal(Modal.None)
         }
-
     }
 
     private fun share() {
-        if (currentState !is GalleryDetailState.Content) return
-        !galleryDetailBitmapExporter((currentState as GalleryDetailState.Content).bitmap)
+        val state = currentState as? GalleryDetailState.Content ?: return
+        val bitmap = if (
+            state.generationType == AiGenerationResult.Type.IMAGE_TO_IMAGE
+            && state.inputBitmap != null
+            && state.selectedTab == GalleryDetailState.Tab.ORIGINAL
+        ) {
+            state.inputBitmap
+        } else {
+            state.bitmap
+        }
+        !galleryDetailBitmapExporter(bitmap)
             .subscribeOnMainThread(schedulersProvider)
             .subscribeBy(::errorLog) { file ->
                 emitEffect(GalleryDetailEffect.ShareImageFile(file))
@@ -89,8 +99,8 @@ class GalleryDetailViewModel(
     }
 
     private fun delete() {
-        if (currentState !is GalleryDetailState.Content) return
-        !deleteGalleryItemUseCase((currentState as GalleryDetailState.Content).id)
+        val state = currentState as? GalleryDetailState.Content ?: return
+        !deleteGalleryItemUseCase(state.id)
             .subscribeOnMainThread(schedulersProvider)
             .subscribeBy(::errorLog) { mainRouter.navigateBack() }
     }
@@ -113,16 +123,23 @@ class GalleryDetailViewModel(
             }
         }
 
-    private fun sendPromptToGenerationScreen(screenType: AiGenerationResult.Type) =
+    private fun sendPromptToGenerationScreen(screenType: AiGenerationResult.Type) {
+        val state = (currentState as? GalleryDetailState.Content) ?: return
         !getGenerationResult(itemId)
             .subscribeOnMainThread(schedulersProvider)
             .doFinally { mainRouter.navigateBack() }
             .subscribeBy(::errorLog) { ai ->
-                generationFormUpdateEvent.update(ai, screenType)
+                generationFormUpdateEvent.update(
+                    ai,
+                    screenType,
+                    state.selectedTab == GalleryDetailState.Tab.ORIGINAL,
+                )
             }
 
+    }
+
     private fun getGenerationResult(id: Long): Single<AiGenerationResult> {
-        if (id <= 0) return getLastResultFromCacheUseCase.invoke()
+        if (id <= 0) return getLastResultFromCacheUseCase()
         return getGenerationResultUseCase(id)
     }
 }

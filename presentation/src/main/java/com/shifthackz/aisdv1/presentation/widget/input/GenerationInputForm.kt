@@ -38,7 +38,6 @@ import com.shifthackz.aisdv1.domain.entity.ServerSource
 import com.shifthackz.aisdv1.domain.entity.StabilityAiClipGuidance
 import com.shifthackz.aisdv1.domain.entity.StabilityAiSampler
 import com.shifthackz.aisdv1.domain.entity.StabilityAiStylePreset
-import com.shifthackz.aisdv1.presentation.R
 import com.shifthackz.aisdv1.presentation.core.GenerationMviIntent
 import com.shifthackz.aisdv1.presentation.core.GenerationMviState
 import com.shifthackz.aisdv1.presentation.model.Modal
@@ -57,8 +56,10 @@ import com.shifthackz.aisdv1.presentation.widget.engine.EngineSelectionComponent
 import com.shifthackz.aisdv1.presentation.widget.input.chip.ChipTextFieldEvent
 import com.shifthackz.aisdv1.presentation.widget.input.chip.ChipTextFieldWithItem
 import kotlin.math.abs
+import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlin.random.Random
+import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 
 @Composable
 fun GenerationInputForm(
@@ -75,7 +76,7 @@ fun GenerationInputForm(
         Text(
             modifier = Modifier.padding(top = 8.dp),
             text = stringResource(
-                id = R.string.hint_batch,
+                id = LocalizationR.string.hint_batch,
                 "${state.batchCount}",
             ),
         )
@@ -110,7 +111,7 @@ fun GenerationInputForm(
                     )
                 }
             },
-            label = { Text(stringResource(id = R.string.width)) },
+            label = { Text(stringResource(id = LocalizationR.string.width)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
         TextField(
@@ -133,7 +134,7 @@ fun GenerationInputForm(
                     )
                 }
             },
-            label = { Text(stringResource(id = R.string.height)) },
+            label = { Text(stringResource(id = LocalizationR.string.height)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
     }
@@ -141,6 +142,7 @@ fun GenerationInputForm(
     Column(modifier = modifier) {
         when (state.mode) {
             ServerSource.AUTOMATIC1111,
+            ServerSource.SWARM_UI,
             ServerSource.STABILITY_AI,
             ServerSource.HUGGING_FACE,
             ServerSource.LOCAL -> EngineSelectionComponent(
@@ -150,7 +152,7 @@ fun GenerationInputForm(
             )
             ServerSource.OPEN_AI -> DropdownTextField(
                 modifier = Modifier.padding(top = 8.dp),
-                label = R.string.hint_model_open_ai.asUiText(),
+                label = LocalizationR.string.hint_model_open_ai.asUiText(),
                 value = state.openAiModel,
                 items = OpenAiModel.entries,
                 onItemSelected = { processIntent(GenerationMviIntent.Update.OpenAi.Model(it)) },
@@ -163,7 +165,7 @@ fun GenerationInputForm(
                     .fillMaxWidth()
                     .padding(top = 8.dp),
                 textFieldValueState = promptChipTextFieldState,
-                label = R.string.hint_prompt,
+                label = LocalizationR.string.hint_prompt,
                 list = state.promptKeywords,
                 onItemClick = { _, tag ->
                     processIntent(
@@ -188,13 +190,14 @@ fun GenerationInputForm(
                     .padding(top = 8.dp),
                 value = state.prompt,
                 onValueChange = { processIntent(GenerationMviIntent.Update.Prompt(it)) },
-                label = { Text(stringResource(id = R.string.hint_prompt)) },
+                label = { Text(stringResource(id = LocalizationR.string.hint_prompt)) },
             )
         }
 
         // Horde does not support "negative prompt"
         when (state.mode) {
             ServerSource.AUTOMATIC1111,
+            ServerSource.SWARM_UI,
             ServerSource.HUGGING_FACE,
             ServerSource.STABILITY_AI,
             ServerSource.LOCAL -> {
@@ -204,7 +207,7 @@ fun GenerationInputForm(
                             .fillMaxWidth()
                             .padding(top = 8.dp),
                         textFieldValueState = negativePromptChipTextFieldState,
-                        label = R.string.hint_prompt_negative,
+                        label = LocalizationR.string.hint_prompt_negative,
                         list = state.negativePromptKeywords,
                         onItemClick = { _, tag ->
                             processIntent(
@@ -229,7 +232,7 @@ fun GenerationInputForm(
                             .padding(top = 8.dp),
                         value = state.negativePrompt,
                         onValueChange = { processIntent(GenerationMviIntent.Update.NegativePrompt(it)) },
-                        label = { Text(stringResource(id = R.string.hint_prompt_negative)) },
+                        label = { Text(stringResource(id = LocalizationR.string.hint_prompt_negative)) },
                     )
                 }
             }
@@ -250,14 +253,14 @@ fun GenerationInputForm(
                 ServerSource.LOCAL -> {
                     DropdownTextField(
                         modifier = localModifier.padding(end = 4.dp),
-                        label = R.string.width.asUiText(),
+                        label = LocalizationR.string.width.asUiText(),
                         value = state.width,
                         items = Constants.sizes,
                         onItemSelected = { processIntent(GenerationMviIntent.Update.Size.Width(it)) },
                     )
                     DropdownTextField(
                         modifier = localModifier.padding(start = 4.dp),
-                        label = R.string.height.asUiText(),
+                        label = LocalizationR.string.height.asUiText(),
                         value = state.height,
                         items = Constants.sizes,
                         onItemSelected = { processIntent(GenerationMviIntent.Update.Size.Height(it)) },
@@ -265,6 +268,7 @@ fun GenerationInputForm(
                 }
 
                 ServerSource.AUTOMATIC1111,
+                ServerSource.SWARM_UI,
                 ServerSource.HUGGING_FACE -> {
                     sizeTextFieldsComponent(localModifier)
                 }
@@ -276,7 +280,7 @@ fun GenerationInputForm(
 
                 ServerSource.OPEN_AI -> {
                     DropdownTextField(
-                        label = R.string.hint_image_size.asUiText(),
+                        label = LocalizationR.string.hint_image_size.asUiText(),
                         value = state.openAiSize,
                         items = OpenAiSize.entries.filter {
                             it.supportedModels.contains(state.openAiModel)
@@ -285,7 +289,6 @@ fun GenerationInputForm(
                         displayDelegate = { it.key.asUiText() },
                     )
                 }
-
             }
         }
 
@@ -293,14 +296,14 @@ fun GenerationInputForm(
             if (state.openAiModel == OpenAiModel.DALL_E_3) {
                 DropdownTextField(
                     modifier = Modifier.padding(top = 8.dp),
-                    label = R.string.hint_quality.asUiText(),
+                    label = LocalizationR.string.hint_quality.asUiText(),
                     value = state.openAiQuality,
                     items = OpenAiQuality.entries,
                     onItemSelected = { processIntent(GenerationMviIntent.Update.OpenAi.Quality(it)) },
                 )
                 DropdownTextField(
                     modifier = Modifier.padding(top = 8.dp),
-                    label = R.string.hint_style.asUiText(),
+                    label = LocalizationR.string.hint_style.asUiText(),
                     value = state.openAiStyle,
                     items = OpenAiStyle.entries,
                     onItemSelected = { processIntent(GenerationMviIntent.Update.OpenAi.Style(it)) },
@@ -325,8 +328,8 @@ fun GenerationInputForm(
                 )
                 Text(
                     text = stringResource(
-                        id = if (state.advancedOptionsVisible) R.string.action_options_hide
-                        else R.string.action_options_show
+                        id = if (state.advancedOptionsVisible) LocalizationR.string.action_options_hide
+                        else LocalizationR.string.action_options_show
                     )
                 )
             }
@@ -343,13 +346,13 @@ fun GenerationInputForm(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp),
-                        label = R.string.hint_sampler.asUiText(),
+                        label = LocalizationR.string.hint_sampler.asUiText(),
                         value = state.selectedSampler,
                         items = state.availableSamplers,
                         onItemSelected = { processIntent(GenerationMviIntent.Update.Sampler(it)) },
                         displayDelegate = { value ->
                             if (value == StabilityAiSampler.NONE.toString()) {
-                                R.string.hint_autodetect.asUiText()
+                                LocalizationR.string.hint_autodetect.asUiText()
                             } else {
                                 value.asUiText()
                             }
@@ -364,13 +367,13 @@ fun GenerationInputForm(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp),
-                        label = R.string.hint_style_preset.asUiText(),
+                        label = LocalizationR.string.hint_style_preset.asUiText(),
                         value = state.selectedStylePreset,
                         items = StabilityAiStylePreset.entries,
                         onItemSelected = { processIntent(GenerationMviIntent.Update.StabilityAi.Style(it)) },
                         displayDelegate = { value ->
                             if (value == StabilityAiStylePreset.NONE) {
-                                R.string.hint_autodetect.asUiText()
+                                LocalizationR.string.hint_autodetect.asUiText()
                             } else {
                                 value.key.asUiText()
                             }
@@ -380,7 +383,7 @@ fun GenerationInputForm(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp),
-                        label = R.string.hint_clip_guidance_preset.asUiText(),
+                        label = LocalizationR.string.hint_clip_guidance_preset.asUiText(),
                         value = state.selectedClipGuidancePreset,
                         items = StabilityAiClipGuidance.entries,
                         onItemSelected = { processIntent(GenerationMviIntent.Update.StabilityAi.ClipGuidance(it)) },
@@ -400,11 +403,11 @@ fun GenerationInputForm(
                                 .let(GenerationMviIntent.Update::Seed)
                                 .let(processIntent::invoke)
                         },
-                        label = { Text(stringResource(id = R.string.hint_seed)) },
+                        label = { Text(stringResource(id = LocalizationR.string.hint_seed)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         trailingIcon = {
                             IconButton(onClick = {
-                                processIntent(GenerationMviIntent.Update.Seed("${Random.nextLong()}"))
+                                processIntent(GenerationMviIntent.Update.Seed("${Random.nextLong().absoluteValue}"))
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Casino,
@@ -428,13 +431,14 @@ fun GenerationInputForm(
                         )
                         Text(
                             modifier = Modifier.padding(horizontal = 8.dp),
-                            text = stringResource(id = R.string.hint_nsfw),
+                            text = stringResource(id = LocalizationR.string.hint_nsfw),
                         )
                     }
                 }
-                // Variation seed only supported for A1111
-                if (state.mode == ServerSource.AUTOMATIC1111) {
-                    TextField(
+                // Variation seed supported for A1111, SwarmUI
+                when (state.mode) {
+                    ServerSource.AUTOMATIC1111,
+                    ServerSource.SWARM_UI -> TextField(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp),
@@ -445,11 +449,11 @@ fun GenerationInputForm(
                                 .let(GenerationMviIntent.Update::SubSeed)
                                 .let(processIntent::invoke)
                         },
-                        label = { Text(stringResource(id = R.string.hint_sub_seed)) },
+                        label = { Text(stringResource(id = LocalizationR.string.hint_sub_seed)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         trailingIcon = {
                             IconButton(onClick = {
-                                processIntent(GenerationMviIntent.Update.SubSeed("${Random.nextLong()}"))
+                                processIntent(GenerationMviIntent.Update.SubSeed("${Random.nextLong().absoluteValue}"))
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Casino,
@@ -458,15 +462,18 @@ fun GenerationInputForm(
                             }
                         },
                     )
+
+                    else -> Unit
                 }
                 // Sub-seed strength is not available for Local Diffusion
                 when (state.mode) {
                     ServerSource.AUTOMATIC1111,
+                    ServerSource.SWARM_UI,
                     ServerSource.HORDE -> {
                         Text(
                             modifier = Modifier.padding(top = 8.dp),
                             text = stringResource(
-                                id = R.string.hint_sub_seed_strength,
+                                id = LocalizationR.string.hint_sub_seed_strength,
                                 "${state.subSeedStrength.roundTo(2)}",
                             ),
                         )
@@ -491,7 +498,7 @@ fun GenerationInputForm(
                     val steps = state.samplingSteps.coerceIn(SAMPLING_STEPS_RANGE_MIN, stepsMax)
                     Text(
                         modifier = Modifier.padding(top = 8.dp),
-                        text = stringResource(id = R.string.hint_sampling_steps, "$steps"),
+                        text = stringResource(id = LocalizationR.string.hint_sampling_steps, "$steps"),
                     )
                     Slider(
                         value = steps * 1f,
@@ -506,7 +513,7 @@ fun GenerationInputForm(
                     Text(
                         modifier = Modifier.padding(top = 8.dp),
                         text = stringResource(
-                            R.string.hint_cfg_scale,
+                            LocalizationR.string.hint_cfg_scale,
                             "${state.cfgScale.roundTo(2)}",
                         ),
                     )
@@ -523,6 +530,7 @@ fun GenerationInputForm(
 
                 when (state.mode) {
                     ServerSource.AUTOMATIC1111,
+                    ServerSource.SWARM_UI,
                     ServerSource.STABILITY_AI,
                     ServerSource.HORDE -> afterSlidersSection()
 
@@ -549,7 +557,7 @@ fun GenerationInputForm(
                         )
                         Text(
                             modifier = Modifier.padding(horizontal = 8.dp),
-                            text = stringResource(id = R.string.hint_restore_faces),
+                            text = stringResource(id = LocalizationR.string.hint_restore_faces),
                         )
                     }
                 }
@@ -558,7 +566,7 @@ fun GenerationInputForm(
     }
 }
 
-fun processTaggedPrompt(keywords: List<String>, event: ChipTextFieldEvent<String>): String {
+private fun processTaggedPrompt(keywords: List<String>, event: ChipTextFieldEvent<String>): String {
     val newKeywords = when (event) {
         is ChipTextFieldEvent.Add -> buildList {
             addAll(keywords)

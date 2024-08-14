@@ -2,8 +2,10 @@ package com.shifthackz.aisdv1.presentation.model
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.Immutable
+import com.shifthackz.aisdv1.core.common.schedulers.SchedulersToken
 import com.shifthackz.aisdv1.core.model.UiText
 import com.shifthackz.aisdv1.domain.entity.AiGenerationResult
+import com.shifthackz.aisdv1.domain.entity.Grid
 import com.shifthackz.aisdv1.domain.entity.HordeProcessStatus
 import com.shifthackz.aisdv1.domain.feature.diffusion.LocalDiffusion
 import com.shifthackz.aisdv1.presentation.screen.setup.ServerSetupState
@@ -16,18 +18,30 @@ sealed interface Modal {
 
     data object ClearAppCache : Modal
 
-    data object DeleteImageConfirm : Modal
+    data class DeleteImageConfirm(
+        val isAll: Boolean,
+        val isMultiple: Boolean,
+    ) : Modal
 
-    data object ConfirmExport : Modal
+    data class ConfirmExport(val exportAll: Boolean) : Modal
 
     data object ExportInProgress : Modal
 
+    data object ConnectLocalHost : Modal
+
+    sealed interface Background : Modal {
+        data object Running : Background
+        data object Scheduled : Background
+    }
 
     @Immutable
     data class SelectSdModel(val models: List<String>, val selected: String) : Modal
 
     @Immutable
-    data class Generating(val status: LocalDiffusion.Status? = null) : Modal {
+    data class Generating(
+        val canCancel: Boolean = false,
+        val status: LocalDiffusion.Status? = null,
+    ) : Modal {
         val pair: Pair<Int, Int>?
             get() = status?.let { (current, total) -> current to total }
     }
@@ -38,7 +52,9 @@ sealed interface Modal {
         val hordeProcessStatus: HordeProcessStatus? = null,
     ) : Modal
 
-    data object PromptBottomSheet : Modal
+    data class PromptBottomSheet(
+        val source: AiGenerationResult.Type,
+    ) : Modal
 
     @Immutable
     data class ExtraBottomSheet(
@@ -64,13 +80,13 @@ sealed interface Modal {
     sealed interface Image : Modal {
 
         @Immutable
-        data class Single(val result: AiGenerationResult, val autoSaveEnabled: Boolean): Image
+        data class Single(val result: AiGenerationResult, val autoSaveEnabled: Boolean) : Image
 
         @Immutable
-        data class Batch(val results: List<AiGenerationResult>, val autoSaveEnabled: Boolean): Image
+        data class Batch(val results: List<AiGenerationResult>, val autoSaveEnabled: Boolean) : Image
 
         @Immutable
-        data class Crop(val bitmap: Bitmap): Image
+        data class Crop(val bitmap: Bitmap) : Image
 
         companion object {
             fun create(list: List<AiGenerationResult>, autoSaveEnabled: Boolean): Image =
@@ -85,7 +101,14 @@ sealed interface Modal {
     @Immutable
     data class Error(val error: UiText) : Modal
 
+    @Immutable
+    data class ManualPermission(val permission: UiText): Modal
+
     data object ClearInPaintConfirm : Modal
 
     data object Language : Modal
+
+    data class LDScheduler(val scheduler: SchedulersToken) : Modal
+
+    data class GalleryGrid(val grid: Grid) : Modal
 }

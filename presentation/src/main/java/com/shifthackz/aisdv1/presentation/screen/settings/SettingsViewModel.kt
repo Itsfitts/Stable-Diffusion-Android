@@ -7,6 +7,7 @@ import com.shifthackz.aisdv1.core.common.log.errorLog
 import com.shifthackz.aisdv1.core.common.model.Quadruple
 import com.shifthackz.aisdv1.core.common.schedulers.SchedulersProvider
 import com.shifthackz.aisdv1.core.common.schedulers.subscribeOnMainThread
+import com.shifthackz.aisdv1.core.model.asUiText
 import com.shifthackz.aisdv1.core.viewmodel.MviRxViewModel
 import com.shifthackz.aisdv1.domain.entity.ColorToken
 import com.shifthackz.aisdv1.domain.entity.DarkThemeToken
@@ -16,10 +17,14 @@ import com.shifthackz.aisdv1.domain.usecase.sdmodel.GetStableDiffusionModelsUseC
 import com.shifthackz.aisdv1.domain.usecase.sdmodel.SelectStableDiffusionModelUseCase
 import com.shifthackz.aisdv1.domain.usecase.stabilityai.ObserveStabilityAiCreditsUseCase
 import com.shifthackz.aisdv1.presentation.model.Modal
+import com.shifthackz.aisdv1.presentation.navigation.router.drawer.DrawerRouter
 import com.shifthackz.aisdv1.presentation.navigation.router.main.MainRouter
+import com.shifthackz.aisdv1.presentation.screen.debug.DebugMenuAccessor
+import com.shifthackz.aisdv1.presentation.screen.drawer.DrawerIntent
 import com.shifthackz.aisdv1.presentation.screen.setup.ServerSetupLaunchSource
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.kotlin.subscribeBy
+import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 
 class SettingsViewModel(
     getStableDiffusionModelsUseCase: GetStableDiffusionModelsUseCase,
@@ -28,8 +33,10 @@ class SettingsViewModel(
     private val clearAppCacheUseCase: ClearAppCacheUseCase,
     private val schedulersProvider: SchedulersProvider,
     private val preferenceManager: PreferenceManager,
+    private val debugMenuAccessor: DebugMenuAccessor,
     private val buildInfoProvider: BuildInfoProvider,
     private val mainRouter: MainRouter,
+    private val drawerRouter: DrawerRouter,
 ) : MviRxViewModel<SettingsState, SettingsIntent, SettingsEffect>() {
 
     override val initialState = SettingsState()
@@ -63,6 +70,7 @@ class SettingsViewModel(
                                 ?: "",
                             stabilityAiCredits = credits,
                             localUseNNAPI = settings.localUseNNAPI,
+                            backgroundGeneration = settings.backgroundGeneration,
                             monitorConnectivity = settings.monitorConnectivity,
                             autoSaveAiResults = settings.autoSaveAiResults,
                             saveToMediaStore = settings.saveToMediaStore,
@@ -73,6 +81,8 @@ class SettingsViewModel(
                             darkTheme = settings.designDarkTheme,
                             colorToken = ColorToken.parse(settings.designColorToken),
                             darkThemeToken = DarkThemeToken.parse(settings.designDarkThemeToken),
+                            galleryGrid = settings.galleryGrid,
+                            developerMode = settings.developerMode,
                             appVersion = version,
                         )
                     }
@@ -82,7 +92,9 @@ class SettingsViewModel(
 
     override fun processIntent(intent: SettingsIntent) {
         when (intent) {
-            SettingsIntent.Action.AppVersion -> mainRouter.navigateToDebugMenu()
+            SettingsIntent.Action.AppVersion -> if (debugMenuAccessor()) {
+                emitEffect(SettingsEffect.DeveloperModeUnlocked)
+            }
 
             SettingsIntent.Action.ClearAppCache.Request -> updateState {
                 it.copy(screenModal = Modal.ClearAppCache)
@@ -99,6 +111,8 @@ class SettingsViewModel(
             SettingsIntent.NavigateConfiguration -> mainRouter.navigateToServerSetup(
                 ServerSetupLaunchSource.SETTINGS
             )
+
+            SettingsIntent.NavigateDeveloperMode -> mainRouter.navigateToDebugMenu()
 
             SettingsIntent.SdModel.OpenChooser -> updateState {
                 it.copy(
@@ -137,7 +151,25 @@ class SettingsViewModel(
 
             is SettingsIntent.LaunchUrl -> emitEffect(SettingsEffect.OpenUrl(intent.url))
 
-            SettingsIntent.StoragePermissionGranted -> preferenceManager.saveToMediaStore = true
+            is SettingsIntent.Permission.Storage -> if (intent.isGranted) {
+                preferenceManager.saveToMediaStore = true
+            } else updateState {
+                it.copy(
+                    screenModal = Modal.ManualPermission(
+                        permission = LocalizationR.string.permission_storage.asUiText(),
+                    ),
+                )
+            }
+
+            is SettingsIntent.Permission.Notification -> if (intent.isGranted) {
+                preferenceManager.backgroundGeneration = true
+            } else updateState {
+                it.copy(
+                    screenModal = Modal.ManualPermission(
+                        permission = LocalizationR.string.permission_notifications.asUiText(),
+                    ),
+                )
+            }
 
             is SettingsIntent.UpdateFlag.DynamicColors -> {
                 preferenceManager.designUseSystemColorPalette = intent.flag
@@ -162,6 +194,29 @@ class SettingsViewModel(
             SettingsIntent.Action.PickLanguage -> updateState {
                 it.copy(screenModal = Modal.Language)
             }
+
+            SettingsIntent.Action.GalleryGrid.Pick -> updateState {
+                it.copy(screenModal = Modal.GalleryGrid(it.galleryGrid))
+            }
+
+            is SettingsIntent.Action.GalleryGrid.Set -> {
+                preferenceManager.galleryGrid = intent.grid
+            }
+
+            is SettingsIntent.Drawer -> when (intent.intent) {
+                DrawerIntent.Close -> drawerRouter.closeDrawer()
+                DrawerIntent.Open -> drawerRouter.openDrawer()
+            }
+
+            SettingsIntent.Action.Donate -> mainRouter.navigateToDonate()
+
+            is SettingsIntent.UpdateFlag.BackgroundGeneration -> {
+                if (intent.flag) {
+                    emitEffect(SettingsEffect.RequestPermission.Notifications)
+                } else {
+                    preferenceManager.backgroundGeneration = false
+                }
+            }
         }
     }
 
@@ -184,7 +239,7 @@ class SettingsViewModel(
     private fun changeSaveToMediaStoreSetting(value: Boolean) {
         val oldImpl: () -> Unit = {
             if (value) {
-                emitEffect(SettingsEffect.RequestStoragePermission)
+                emitEffect(SettingsEffect.RequestPermission.Storage)
             } else {
                 preferenceManager.saveToMediaStore = false
                 updateState { it.copy(saveToMediaStore = false) }

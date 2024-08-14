@@ -28,11 +28,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.shifthackz.aisdv1.domain.entity.ServerSource
-import com.shifthackz.aisdv1.presentation.R
 import com.shifthackz.aisdv1.presentation.core.GenerationMviIntent
 import com.shifthackz.aisdv1.presentation.core.GenerationMviState
 import com.shifthackz.aisdv1.presentation.model.ExtraType
 import com.shifthackz.aisdv1.presentation.model.Modal
+import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 
 @Composable
 fun GenerationBottomToolbar(
@@ -49,26 +49,30 @@ fun GenerationBottomToolbar(
             .padding(top = 8.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
-        if (state.mode == ServerSource.AUTOMATIC1111) {
-            GenerationBottomToolbarBottomLayer(
-                modifier = Modifier.padding(bottom = 36.dp),
-                strokeAccentState = strokeAccentState,
-                state = state,
-                processIntent = processIntent,
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .padding(horizontal = 16.dp)
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = 22.dp,
-                            topEnd = 22.dp,
+        when (state.mode) {
+            ServerSource.AUTOMATIC1111,
+            ServerSource.SWARM_UI -> {
+                GenerationBottomToolbarBottomLayer(
+                    modifier = Modifier.padding(bottom = 36.dp),
+                    strokeAccentState = strokeAccentState,
+                    state = state,
+                    processIntent = processIntent,
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .padding(horizontal = 16.dp)
+                        .clip(
+                            RoundedCornerShape(
+                                topStart = 22.dp,
+                                topEnd = 22.dp,
+                            )
                         )
-                    )
-                    .background(color = MaterialTheme.colorScheme.surface),
-            )
+                        .background(color = MaterialTheme.colorScheme.surface),
+                )
+            }
+            else -> Unit
         }
         content()
     }
@@ -132,7 +136,7 @@ private fun GenerationBottomToolbarBottomLayer(
                     ),
                 )
             },
-            text = stringResource(id = R.string.title_lora),
+            text = stringResource(id = LocalizationR.string.title_lora),
             textAlign = TextAlign.Center,
             color = localColor,
             style = localStyle,
@@ -154,33 +158,35 @@ private fun GenerationBottomToolbarBottomLayer(
                     )
                 )
             },
-            text = stringResource(id = R.string.title_txt_inversion_short),
+            text = stringResource(id = LocalizationR.string.title_txt_inversion_short),
             textAlign = TextAlign.Center,
             color = localColor,
             style = localStyle,
         )
-        Spacer(
-            modifier = Modifier
-                .width(1.dp)
-                .height(with(LocalDensity.current) { dividerHeight.toDp() })
-                .background(color = accentColor),
-        )
-        Text(
-            modifier = localModifier {
-                processIntent(
-                    GenerationMviIntent.SetModal(
-                        Modal.ExtraBottomSheet(
-                            state.prompt,
-                            state.negativePrompt,
-                            ExtraType.HyperNet,
+        if (state.mode == ServerSource.AUTOMATIC1111) {
+            Spacer(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(with(LocalDensity.current) { dividerHeight.toDp() })
+                    .background(color = accentColor),
+            )
+            Text(
+                modifier = localModifier {
+                    processIntent(
+                        GenerationMviIntent.SetModal(
+                            Modal.ExtraBottomSheet(
+                                state.prompt,
+                                state.negativePrompt,
+                                ExtraType.HyperNet,
+                            ),
                         ),
-                    ),
-                )
-            },
-            text = stringResource(id = R.string.title_hyper_net_short),
-            textAlign = TextAlign.Center,
-            color = localColor,
-            style = localStyle,
-        )
+                    )
+                },
+                text = stringResource(id = LocalizationR.string.title_hyper_net_short),
+                textAlign = TextAlign.Center,
+                color = localColor,
+                style = localStyle,
+            )
+        }
     }
 }

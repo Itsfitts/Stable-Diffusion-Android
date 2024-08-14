@@ -2,6 +2,9 @@
 
 package com.shifthackz.aisdv1.presentation.screen.gallery.detail
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -48,7 +51,6 @@ import com.shifthackz.aisdv1.core.model.asUiText
 import com.shifthackz.aisdv1.core.sharing.shareFile
 import com.shifthackz.aisdv1.core.ui.MviComponent
 import com.shifthackz.aisdv1.domain.entity.AiGenerationResult
-import com.shifthackz.aisdv1.presentation.R
 import com.shifthackz.aisdv1.presentation.modal.ModalRenderer
 import com.shifthackz.aisdv1.presentation.theme.colors
 import com.shifthackz.aisdv1.presentation.utils.Constants
@@ -58,6 +60,8 @@ import com.shifthackz.catppuccin.palette.Catppuccin
 import org.koin.androidx.compose.getViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
+import com.shifthackz.aisdv1.core.localization.R as LocalizationR
+import com.shifthackz.aisdv1.presentation.R as PresentationR
 
 @Composable
 fun GalleryDetailScreen(itemId: Long) {
@@ -110,7 +114,7 @@ private fun ScreenContent(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
-                        Text(stringResource(id = R.string.title_gallery_details))
+                        Text(stringResource(id = LocalizationR.string.title_gallery_details))
                     },
                     navigationIcon = {
                         IconButton(
@@ -126,17 +130,23 @@ private fun ScreenContent(
                         )
                     },
                     actions = {
-                        IconButton(
-                            onClick = { processIntent(GalleryDetailIntent.Export.Image) },
-                            content = {
-                                Image(
-                                    modifier = Modifier.size(24.dp),
-                                    painter = painterResource(id = R.drawable.ic_share),
-                                    contentDescription = "Export",
-                                    colorFilter = ColorFilter.tint(LocalContentColor.current),
-                                )
-                            },
-                        )
+                        AnimatedVisibility(
+                            visible = state.selectedTab != GalleryDetailState.Tab.INFO,
+                            enter = fadeIn(),
+                            exit = fadeOut(),
+                        ) {
+                            IconButton(
+                                onClick = { processIntent(GalleryDetailIntent.Export.Image) },
+                                content = {
+                                    Image(
+                                        modifier = Modifier.size(24.dp),
+                                        painter = painterResource(id = PresentationR.drawable.ic_share),
+                                        contentDescription = "Export",
+                                        colorFilter = ColorFilter.tint(LocalContentColor.current),
+                                    )
+                                },
+                            )
+                        }
                     }
                 )
             },
@@ -189,7 +199,7 @@ private fun GalleryDetailNavigationBar(
                 ) {
                     Icon(
                         modifier = Modifier.size(24.dp),
-                        painter = painterResource(id = R.drawable.ic_text),
+                        painter = painterResource(id = PresentationR.drawable.ic_text),
                         contentDescription = "txt2img",
                         tint = LocalContentColor.current,
                     )
@@ -199,7 +209,7 @@ private fun GalleryDetailNavigationBar(
                 ) {
                     Icon(
                         modifier = Modifier.size(24.dp),
-                        painter = painterResource(id = R.drawable.ic_image),
+                        painter = painterResource(id = PresentationR.drawable.ic_image),
                         contentDescription = "img2img",
                         tint = LocalContentColor.current,
                     )
@@ -239,7 +249,7 @@ private fun GalleryDetailNavigationBar(
                         Image(
                             modifier = Modifier.size(24.dp),
                             painter = painterResource(tab.iconRes),
-                            contentDescription = stringResource(id = R.string.gallery_tab_image),
+                            contentDescription = stringResource(id = LocalizationR.string.gallery_tab_image),
                             colorFilter = ColorFilter.tint(LocalContentColor.current),
                         )
                     },
@@ -301,91 +311,91 @@ private fun GalleryDetailsTable(
         val colorEvenBg = MaterialTheme.colorScheme.surfaceTint
         GalleryDetailRow(
             modifier = Modifier.background(color = colorOddBg),
-            name = R.string.gallery_info_field_date.asUiText(),
+            name = LocalizationR.string.gallery_info_field_date.asUiText(),
             value = state.createdAt,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,
         )
         GalleryDetailRow(
             modifier = Modifier.background(color = colorEvenBg),
-            name = R.string.gallery_info_field_type.asUiText(),
+            name = LocalizationR.string.gallery_info_field_type.asUiText(),
             value = state.type,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,
         )
         GalleryDetailRow(
             modifier = Modifier.background(color = colorOddBg),
-            name = R.string.gallery_info_field_prompt.asUiText(),
+            name = LocalizationR.string.gallery_info_field_prompt.asUiText(),
             value = state.prompt,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,
         )
         GalleryDetailRow(
             modifier = Modifier.background(color = colorEvenBg),
-            name = R.string.gallery_info_field_negative_prompt.asUiText(),
+            name = LocalizationR.string.gallery_info_field_negative_prompt.asUiText(),
             value = state.negativePrompt,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,
         )
         GalleryDetailRow(
             modifier = Modifier.background(color = colorOddBg),
-            name = R.string.gallery_info_field_size.asUiText(),
+            name = LocalizationR.string.gallery_info_field_size.asUiText(),
             value = state.size,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,
         )
         GalleryDetailRow(
             modifier = Modifier.background(color = colorEvenBg),
-            name = R.string.gallery_info_field_sampling_steps.asUiText(),
+            name = LocalizationR.string.gallery_info_field_sampling_steps.asUiText(),
             value = state.samplingSteps,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,
         )
         GalleryDetailRow(
             modifier = Modifier.background(color = colorOddBg),
-            name = R.string.gallery_info_field_cfg.asUiText(),
+            name = LocalizationR.string.gallery_info_field_cfg.asUiText(),
             value = state.cfgScale,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,
         )
         GalleryDetailRow(
             modifier = Modifier.background(color = colorEvenBg),
-            name = R.string.gallery_info_field_restore_faces.asUiText(),
+            name = LocalizationR.string.gallery_info_field_restore_faces.asUiText(),
             value = state.restoreFaces,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,
         )
         GalleryDetailRow(
             modifier = Modifier.background(color = colorOddBg),
-            name = R.string.gallery_info_field_sampler.asUiText(),
+            name = LocalizationR.string.gallery_info_field_sampler.asUiText(),
             value = state.sampler,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,
         )
         GalleryDetailRow(
             modifier = Modifier.background(color = colorEvenBg),
-            name = R.string.gallery_info_field_seed.asUiText(),
+            name = LocalizationR.string.gallery_info_field_seed.asUiText(),
             value = state.seed,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,
         )
         GalleryDetailRow(
             modifier = Modifier.background(color = colorOddBg),
-            name = R.string.gallery_info_field_sub_seed.asUiText(),
+            name = LocalizationR.string.gallery_info_field_sub_seed.asUiText(),
             value = state.subSeed,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,
         )
         GalleryDetailRow(
             modifier = Modifier.background(color = colorEvenBg),
-            name = R.string.gallery_info_field_sub_seed_strength.asUiText(),
+            name = LocalizationR.string.gallery_info_field_sub_seed_strength.asUiText(),
             value = state.subSeedStrength,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,
         )
         if (state.generationType == AiGenerationResult.Type.IMAGE_TO_IMAGE) GalleryDetailRow(
             modifier = Modifier.background(color = colorOddBg),
-            name = R.string.gallery_info_field_denoising_strength.asUiText(),
+            name = LocalizationR.string.gallery_info_field_denoising_strength.asUiText(),
             value = state.denoisingStrength,
             color = colorOddText,
             onCopyTextClick = onCopyTextClick,

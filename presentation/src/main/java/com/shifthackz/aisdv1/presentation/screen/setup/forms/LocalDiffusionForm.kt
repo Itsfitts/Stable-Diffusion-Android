@@ -32,18 +32,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.shifthackz.aisdv1.core.common.appbuild.BuildInfoProvider
 import com.shifthackz.aisdv1.core.common.appbuild.BuildType
 import com.shifthackz.aisdv1.domain.entity.DownloadState
 import com.shifthackz.aisdv1.domain.entity.LocalAiModel
-import com.shifthackz.aisdv1.presentation.R
 import com.shifthackz.aisdv1.presentation.screen.setup.ServerSetupIntent
+import com.shifthackz.aisdv1.presentation.screen.setup.ServerSetupScreenTags.CUSTOM_MODEL_SWITCH
 import com.shifthackz.aisdv1.presentation.screen.setup.ServerSetupState
+import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 
 @Composable
 fun LocalDiffusionForm(
@@ -68,8 +71,10 @@ fun LocalDiffusionForm(
                 .clickable { processIntent(ServerSetupIntent.SelectLocalModel(model)) },
         ) {
             Row(
-                modifier = Modifier.padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .padding(vertical = 4.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val icon = when (model.downloadState) {
@@ -82,20 +87,28 @@ fun LocalDiffusionForm(
                 }
                 Icon(
                     modifier = modifier
-                        .padding(horizontal = 8.dp)
+                        .padding(start = 8.dp)
                         .size(48.dp),
                     imageVector = icon,
                     contentDescription = "Download state",
                 )
                 Column(
-                    modifier = Modifier.padding(start = 4.dp)
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .weight(1f)
                 ) {
-                    Text(text = model.name)
+                    Text(
+                        text = model.name,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 2
+                    )
                     if (model.id != LocalAiModel.CUSTOM.id) {
-                        Text(model.size)
+                        Text(
+                            text = model.size,
+                            maxLines = 1
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.weight(1f))
                 if (model.id != LocalAiModel.CUSTOM.id) {
                     Button(
                         modifier = Modifier.padding(end = 8.dp),
@@ -104,15 +117,16 @@ fun LocalDiffusionForm(
                         Text(
                             text = stringResource(
                                 id = when (model.downloadState) {
-                                    is DownloadState.Downloading -> R.string.cancel
-                                    is DownloadState.Error -> R.string.retry
+                                    is DownloadState.Downloading -> LocalizationR.string.cancel
+                                    is DownloadState.Error -> LocalizationR.string.retry
                                     else -> {
-                                        if (model.downloaded) R.string.delete
-                                        else R.string.download
+                                        if (model.downloaded) LocalizationR.string.delete
+                                        else LocalizationR.string.download
                                     }
                                 }
                             ),
                             color = LocalContentColor.current,
+                            maxLines = 1
                         )
                     }
                 }
@@ -122,12 +136,12 @@ fun LocalDiffusionForm(
                     modifier = Modifier.padding(8.dp),
                 ) {
                     Text(
-                        text = stringResource(id = R.string.model_local_custom_title),
+                        text = stringResource(id = LocalizationR.string.model_local_custom_title),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = stringResource(id = R.string.model_local_custom_sub_title),
+                        text = stringResource(id = LocalizationR.string.model_local_custom_sub_title),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -227,7 +241,7 @@ fun LocalDiffusionForm(
                         modifier = Modifier
                             .padding(horizontal = 8.dp)
                             .padding(bottom = 8.dp),
-                        text = stringResource(id = R.string.error_download_fail),
+                        text = stringResource(id = LocalizationR.string.error_download_fail),
                     )
                 }
 
@@ -243,14 +257,14 @@ fun LocalDiffusionForm(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 32.dp, bottom = 8.dp),
-            text = stringResource(id = R.string.hint_local_diffusion_title),
+            text = stringResource(id = LocalizationR.string.hint_local_diffusion_title),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold,
         )
         Text(
             modifier = Modifier.padding(top = 16.dp, bottom = 16.dp),
-            text = stringResource(id = R.string.hint_local_diffusion_sub_title),
+            text = stringResource(id = LocalizationR.string.hint_local_diffusion_sub_title),
             style = MaterialTheme.typography.bodyMedium,
         )
         if (buildInfoProvider.type == BuildType.FOSS) {
@@ -258,6 +272,7 @@ fun LocalDiffusionForm(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Switch(
+                    modifier = Modifier.testTag(CUSTOM_MODEL_SWITCH),
                     checked = state.localCustomModel,
                     onCheckedChange = {
                         processIntent(ServerSetupIntent.AllowLocalCustomModel(it))
@@ -265,14 +280,14 @@ fun LocalDiffusionForm(
                 )
                 Text(
                     modifier = Modifier.padding(start = 8.dp),
-                    text = stringResource(id = R.string.model_local_custom_switch),
+                    text = stringResource(id = LocalizationR.string.model_local_custom_switch),
                 )
             }
         }
         if (state.localCustomModel && buildInfoProvider.type == BuildType.FOSS) {
             Text(
                 modifier = Modifier.padding(vertical = 8.dp),
-                text = stringResource(id = R.string.model_local_permission_title),
+                text = stringResource(id = LocalizationR.string.model_local_permission_title),
                 style = MaterialTheme.typography.bodyMedium,
             )
             OutlinedButton(
@@ -282,7 +297,7 @@ fun LocalDiffusionForm(
                 onClick = { processIntent(ServerSetupIntent.LaunchManageStoragePermission) },
             ) {
                 Text(
-                    text = stringResource(id = R.string.model_local_permission_button),
+                    text = stringResource(id = LocalizationR.string.model_local_permission_button),
                     color = LocalContentColor.current,
                 )
             }
@@ -295,7 +310,7 @@ fun LocalDiffusionForm(
             .forEach { localModel -> modelItemUi(localModel) }
         Text(
             modifier = Modifier.padding(top = 16.dp),
-            text = stringResource(id = R.string.hint_local_diffusion_warning),
+            text = stringResource(id = LocalizationR.string.hint_local_diffusion_warning),
             style = MaterialTheme.typography.bodyMedium,
         )
     }

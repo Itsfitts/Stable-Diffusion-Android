@@ -3,6 +3,7 @@ package com.shifthackz.aisdv1.presentation.screen.settings
 import androidx.compose.runtime.Immutable
 import com.shifthackz.aisdv1.domain.entity.ColorToken
 import com.shifthackz.aisdv1.domain.entity.DarkThemeToken
+import com.shifthackz.aisdv1.domain.entity.Grid
 import com.shifthackz.aisdv1.domain.entity.ServerSource
 import com.shifthackz.aisdv1.presentation.model.Modal
 import com.shifthackz.android.core.mvi.MviState
@@ -16,6 +17,7 @@ data class SettingsState(
     val sdModelSelected: String = "",
     val stabilityAiCredits: Float = 0f,
     val localUseNNAPI: Boolean = false,
+    val backgroundGeneration: Boolean = false,
     val monitorConnectivity: Boolean = false,
     val autoSaveAiResults: Boolean = false,
     val saveToMediaStore: Boolean = false,
@@ -26,6 +28,8 @@ data class SettingsState(
     val darkTheme: Boolean = false,
     val colorToken: ColorToken = ColorToken.MAUVE,
     val darkThemeToken: DarkThemeToken = DarkThemeToken.FRAPPE,
+    val galleryGrid: Grid = Grid.Fixed2,
+    val developerMode: Boolean = false,
     val appVersion: String = "",
 ) : MviState {
 
@@ -39,7 +43,7 @@ data class SettingsState(
         get() = serverSource == ServerSource.AUTOMATIC1111
 
     val showMonitorConnectionOption: Boolean
-        get() = serverSource == ServerSource.AUTOMATIC1111
+        get() = serverSource == ServerSource.AUTOMATIC1111 || serverSource == ServerSource.SWARM_UI
 
     val showFormAdvancedOption: Boolean
         get() = serverSource != ServerSource.OPEN_AI

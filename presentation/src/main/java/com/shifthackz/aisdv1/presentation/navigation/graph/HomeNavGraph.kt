@@ -4,20 +4,24 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.get
-import com.shifthackz.aisdv1.presentation.R
+import com.shifthackz.aisdv1.core.model.asUiText
 import com.shifthackz.aisdv1.presentation.model.NavItem
+import com.shifthackz.aisdv1.presentation.navigation.router.home.HomeRouter
 import com.shifthackz.aisdv1.presentation.screen.gallery.list.GalleryScreen
 import com.shifthackz.aisdv1.presentation.screen.home.HomeNavigationScreen
 import com.shifthackz.aisdv1.presentation.screen.img2img.ImageToImageScreen
 import com.shifthackz.aisdv1.presentation.screen.settings.SettingsScreen
 import com.shifthackz.aisdv1.presentation.screen.txt2img.TextToImageScreen
 import com.shifthackz.aisdv1.presentation.utils.Constants
+import org.koin.compose.koinInject
+import com.shifthackz.aisdv1.core.localization.R as LocalizationR
+import com.shifthackz.aisdv1.presentation.R as PresentationR
 
 fun NavGraphBuilder.homeScreenNavGraph(route: String = Constants.ROUTE_HOME) {
     addDestination(
@@ -34,51 +38,69 @@ fun NavGraphBuilder.homeScreenNavGraph(route: String = Constants.ROUTE_HOME) {
     )
 }
 
-@Composable
-private fun txt2ImgTab() = NavItem(
-    name = stringResource(R.string.home_tab_txt_to_img),
+fun txt2ImgTab() = NavItem(
+    name = LocalizationR.string.home_tab_txt_to_img.asUiText(),
     route = Constants.ROUTE_TXT_TO_IMG,
     icon = NavItem.Icon.Resource(
-        resId = R.drawable.ic_text,
+        resId = PresentationR.drawable.ic_text,
         modifier = Modifier.size(24.dp),
     ),
-    content = { TextToImageScreen() },
+    content = {
+        HomeTabBase(Constants.ROUTE_TXT_TO_IMG) {
+            TextToImageScreen()
+        }
+    },
 )
 
-@Composable
-private fun img2imgTab() = NavItem(
-    name = stringResource(R.string.home_tab_img_to_img),
+fun img2imgTab() = NavItem(
+    name = LocalizationR.string.home_tab_img_to_img.asUiText(),
     route = Constants.ROUTE_IMG_TO_IMG,
     icon = NavItem.Icon.Resource(
-        resId = R.drawable.ic_image,
+        resId = PresentationR.drawable.ic_image,
         modifier = Modifier.size(24.dp),
     ),
     content = {
-        ImageToImageScreen()
+        HomeTabBase(Constants.ROUTE_IMG_TO_IMG) {
+            ImageToImageScreen()
+        }
     },
 )
 
-@Composable
-private fun galleryTab() = NavItem(
-    name = stringResource(R.string.home_tab_gallery),
+fun galleryTab() = NavItem(
+    name = LocalizationR.string.home_tab_gallery.asUiText(),
     route = Constants.ROUTE_GALLERY,
     icon = NavItem.Icon.Resource(
-        resId = R.drawable.ic_gallery,
+        resId = PresentationR.drawable.ic_gallery,
         modifier = Modifier.size(24.dp),
     ),
     content = {
-        GalleryScreen()
+        HomeTabBase(Constants.ROUTE_GALLERY) {
+            GalleryScreen()
+        }
     },
 )
 
-@Composable
-private fun settingsTab() = NavItem(
-    name = stringResource(id = R.string.home_tab_settings),
+fun settingsTab() = NavItem(
+    name = LocalizationR.string.home_tab_settings.asUiText(),
     route = Constants.ROUTE_SETTINGS,
     icon = NavItem.Icon.Vector(
         vector = Icons.Default.Settings,
     ),
     content = {
-        SettingsScreen()
+        HomeTabBase(Constants.ROUTE_SETTINGS) {
+            SettingsScreen()
+        }
     }
 )
+
+@Composable
+private fun HomeTabBase(
+    route: String,
+    content: @Composable () -> Unit,
+) {
+    val homeRouter: HomeRouter = koinInject()
+    LaunchedEffect(Unit) {
+        homeRouter.updateExternallyWithoutNavigation(route)
+    }
+    content()
+}

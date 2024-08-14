@@ -10,12 +10,22 @@
 [![F-Droid](docs/assets/fdroid.png)](https://f-droid.org/packages/com.shifthackz.aisdv1.app.foss)
 [![4pda](docs/assets/4pda.png)](https://4pda.to/forum/index.php?showtopic=1082639)
 
-Stable Diffusion AI is an easy-to-use app that lets you quickly generate images from text or other images with just a few clicks. With this app, you can communicate with your own server and generate high-quality images in seconds.
+Stable Diffusion AI (SDAI) is an easy-to-use app that:
+
+- Brings you the power of digital art creativity with Stable Diffusion AI
+- Gives you freedom to choose your AI generation provider
+- Has no ADs, telemetry and does not spy on you
+
+## Screenshots
+
+![](docs/assets/scr_group_1.png)
+![](docs/assets/scr_group_2.png)
 
 ## Features
 
 - Can use server environment powered by [AI Horde](https://stablehorde.net/) (a crowdsourced distributed cluster of Stable Diffusion workers)
 - Can use server environment powered by [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) (AUTOMATIC1111)
+- Can use server environment powered by [SwarmUI](https://github.com/mcmonkeyprojects/SwarmUI)
 - Can use server envitonment powered by [Hugging Face Inference API](https://huggingface.co/docs/api-inference/quicktour).
 - Can use server environment powered by [OpenAI](https://platform.openai.com/docs/api-reference/images) (DALL-E-2, DALL-E-3).
 - Can use server environment powered by [Stability AI](https://platform.stability.ai/).
@@ -36,7 +46,7 @@ Stable Diffusion AI is an easy-to-use app that lets you quickly generate images 
     - Mask mode (Masked, not masked)
     - Masked content (Fill, Original, Latent noise, Latent nothing)
     - Inpaint area (Whole picture, only masked)
-    - Only maked padding (0 to 256 px)
+    - Only masked padding (0 to 256 px)
   - Batch generation with maximum of 20 images (for A1111 and Horde)
   - Lora picker (for A1111)
   - Textual inversion picker (for A1111)
@@ -66,35 +76,43 @@ You can have it running either on your own hardware with modern GPU from Nvidia 
 1. Follow the setup instructions on [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) repository.
 2. Add the arguments `--api --listen` to the command line arguments of WebUI launch script.
 3. After running the server, get the IP address, or URL of your WebUI server.
-4. On the first launch, app will ask you for the server URL, enter it and press Connect button. If you want to change the server URL, go to Settings tab, choose Configure option, and repeat the setup flow.
+4. On the first launch, app will ask you for the server URL, enter it and press "Connect" button. If you want to change the server URL, go to Settings tab, choose "Configure" option and repeat the setup flow.
 
-If for some reason you have no ability to run your server instance, you can toggle the **Demo mode** swith on server setup page: it will allow you to test the app and get familiar with it, but it will return some mock images instead of AI-generated ones.
+If for some reason you have no ability to run your server instance, you can toggle the **Demo mode** switch on server setup page: it will allow you to test the app and get familiar with it, but it will return some mock images instead of AI-generated ones.
 
-### Option 2: Use AI Horde
+### Option 2: Use your own SwarmUI instance
+
+This requires you to have the SwarmUI that is running in server mode.
+
+You can have it running either on your own hardware with modern GPU from Nvidia or AMD, or running it using Google Colab.
+
+Please refer to the [SwarmUI documentation](https://github.com/mcmonkeyprojects/SwarmUI?tab=readme-ov-file#swarmui) for installation instructions.
+
+### Option 3: Use AI Horde
 
 [AI Horde](https://stablehorde.net/) is a crowdsourced distributed cluster of Image generation workers and text generation workers. 
 
-AI Horde requires to use API KEY, this mobile app alows to use either default API KEY (which is "0000000000"), or type your own. You can sign up and get your own AI Horde API KEY [here](https://stablehorde.net/register).
+AI Horde requires to use API KEY, this mobile app allows to use either default API KEY (which is "0000000000"), or type your own. You can sign up and get your own AI Horde API KEY [here](https://stablehorde.net/register).
 
-### Option 3: Hugging Face Inference
+### Option 4: Hugging Face Inference
 
 [Hugging Face Inference API](https://huggingface.co/docs/api-inference/index) allows to test and evaluate, over 150,000 publicly accessible machine learning models, or your own private models, via simple HTTP requests, with fast inference hosted on Hugging Face shared infrastructure. This service is free, but is rate-limited.
 
 Hugging Face Inference requires to use API KEY, which can be created in [Hugging Face account settings](https://huggingface.co/settings/tokens).
 
-### Option 4: OpenAI
+### Option 5: OpenAI
 
-OpenAI provides a service for text to image generation using [DALLE-2](https://openai.com/dall-e-2) or [DALLE-3](https://openai.com/dall-e-3) models. This service is paid, 
+OpenAI provides a service for text to image generation using [DALLE-2](https://openai.com/dall-e-2) or [DALLE-3](https://openai.com/dall-e-3) models. This service is paid. 
 
 OpenAI requires to use API KEY, which can be created in [OpenAI API Key settings](https://platform.openai.com/api-keys).
 
-### Option 5: StabilityAI
+### Option 6: StabilityAI
 
 [StabilityAI](https://platform.stability.ai/) is the image generation service provided by DreamStudio.
 
 StabilityAI requires to use API KEY, which can be created in [API Keys page](https://platform.stability.ai/account/keys).
 
-### Option 6: Local Diffusion (Beta)
+### Option 7: Local Diffusion (Beta)
 
 Only **txt2img** mode is supported.
 
@@ -112,12 +130,13 @@ User interface of the app is translated for languages listed in this table:
 | Ukrainian | 0.1.0 | `Translated` |
 | Turkish | 0.4.1 | `Translated` |
 | Russian | 0.5.5 | `Translated` |
+| Chinese (Simplified) | 0.6.2 | `Translated` |
 
 Any contributions to the translations are welcome.
 
 ## Difference between builds from Google Play and F-Droid/GitHub releases
 
-As Google Play has some policies that app needs to be compliant with in order to be allowed to publist on Google Play there are some differences between builds distributed via Google Play and F-Droid/GitHub releases, listed in table.
+As Google Play has some policies that app needs to be compliant with in order to be allowed to publish on Google Play there are some differences between builds distributed via Google Play and F-Droid/GitHub releases, listed in this table:
 
 | Feature | Google Play build | F-Droid/GitHub build | Reason |
 | --- |:---:|:---:| --- |

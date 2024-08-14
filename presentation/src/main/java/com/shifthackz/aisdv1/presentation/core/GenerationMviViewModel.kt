@@ -8,13 +8,13 @@ import com.shifthackz.aisdv1.core.common.schedulers.SchedulersProvider
 import com.shifthackz.aisdv1.core.common.schedulers.subscribeOnMainThread
 import com.shifthackz.aisdv1.core.validation.dimension.DimensionValidator
 import com.shifthackz.aisdv1.core.viewmodel.MviRxViewModel
-import com.shifthackz.aisdv1.domain.entity.AiGenerationResult
 import com.shifthackz.aisdv1.domain.entity.HordeProcessStatus
 import com.shifthackz.aisdv1.domain.entity.OpenAiSize
 import com.shifthackz.aisdv1.domain.entity.ServerSource
 import com.shifthackz.aisdv1.domain.entity.StabilityAiSampler
 import com.shifthackz.aisdv1.domain.entity.StableDiffusionSampler
 import com.shifthackz.aisdv1.domain.feature.diffusion.LocalDiffusion
+import com.shifthackz.aisdv1.domain.feature.work.BackgroundWorkObserver
 import com.shifthackz.aisdv1.domain.preference.PreferenceManager
 import com.shifthackz.aisdv1.domain.usecase.caching.SaveLastResultToCacheUseCase
 import com.shifthackz.aisdv1.domain.usecase.generation.InterruptGenerationUseCase
@@ -32,25 +32,22 @@ import com.shifthackz.android.core.mvi.MviEffect
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.kotlin.subscribeBy
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import java.util.concurrent.TimeUnit
 
-abstract class GenerationMviViewModel<S : GenerationMviState, I : GenerationMviIntent, E : MviEffect> :
-    MviRxViewModel<S, I, E>(), KoinComponent {
-
-    private val preferenceManager: PreferenceManager by inject()
-    private val schedulersProvider: SchedulersProvider by inject()
-    private val saveLastResultToCacheUseCase: SaveLastResultToCacheUseCase by inject()
-    private val saveGenerationResultUseCase: SaveGenerationResultUseCase by inject()
-    private val getStableDiffusionSamplersUseCase: GetStableDiffusionSamplersUseCase by inject()
-    private val observeHordeProcessStatusUseCase: ObserveHordeProcessStatusUseCase by inject()
-    private val observeLocalDiffusionProcessStatusUseCase: ObserveLocalDiffusionProcessStatusUseCase by inject()
-    private val interruptGenerationUseCase: InterruptGenerationUseCase by inject()
-
-    private val mainRouter: MainRouter by inject()
-    private val drawerRouter: DrawerRouter by inject()
-    private val dimensionValidator: DimensionValidator by inject()
+abstract class GenerationMviViewModel<S : GenerationMviState, I : GenerationMviIntent, E : MviEffect>(
+    private val preferenceManager: PreferenceManager,
+    getStableDiffusionSamplersUseCase: GetStableDiffusionSamplersUseCase,
+    observeHordeProcessStatusUseCase: ObserveHordeProcessStatusUseCase,
+    observeLocalDiffusionProcessStatusUseCase: ObserveLocalDiffusionProcessStatusUseCase,
+    private val saveLastResultToCacheUseCase: SaveLastResultToCacheUseCase,
+    private val saveGenerationResultUseCase: SaveGenerationResultUseCase,
+    private val interruptGenerationUseCase: InterruptGenerationUseCase,
+    private val mainRouter: MainRouter,
+    private val drawerRouter: DrawerRouter,
+    private val dimensionValidator: DimensionValidator,
+    private val schedulersProvider: SchedulersProvider,
+    private val backgroundWorkObserver: BackgroundWorkObserver,
+) : MviRxViewModel<S, I, E>() {
 
     private var generationDisposable: Disposable? = null
     private var randomImageDisposable: Disposable? = null
@@ -115,11 +112,21 @@ abstract class GenerationMviViewModel<S : GenerationMviState, I : GenerationMviI
             )
     }
 
-    abstract fun generate(): Disposable
+    abstract fun generateDisposable(): Disposable
+
+    abstract fun generateBackground()
 
     open fun onReceivedHordeStatus(status: HordeProcessStatus) {}
 
     open fun onReceivedLocalDiffusionStatus(status: LocalDiffusion.Status) {}
+
+    override fun onCleared() {
+        super.onCleared()
+        generationDisposable?.dispose()
+        generationDisposable = null
+        randomImageDisposable?.dispose()
+        randomImageDisposable = null
+    }
 
     override fun processIntent(intent: I) {
         when (intent) {
@@ -240,15 +247,27 @@ abstract class GenerationMviViewModel<S : GenerationMviState, I : GenerationMviI
                 setActiveModal(Modal.None)
             }
 
-            GenerationMviIntent.Generate -> generate { generate() }
+            GenerationMviIntent.Generate -> {
+                if (backgroundWorkObserver.hasActiveTasks()) {
+                    setActiveModal(Modal.Background.Running)
+                } else {
+                    if (preferenceManager.backgroundGeneration) {
+                        generateBackground()
+                        backgroundWorkObserver.refreshStatus()
+                        setActiveModal(Modal.Background.Scheduled)
+                    } else {
+                        generateOnUi { generateDisposable() }
+                    }
+                }
+            }
 
             GenerationMviIntent.Configuration -> mainRouter.navigateToServerSetup(
-                ServerSetupLaunchSource.SETTINGS
+                ServerSetupLaunchSource.SETTINGS,
             )
 
-            is GenerationMviIntent.UpdateFromGeneration -> updateFormPreviousAiGeneration(
-                intent.ai
-            )
+            is GenerationMviIntent.UpdateFromGeneration -> {
+                updateFormPreviousAiGeneration(intent.payload)
+            }
 
             is GenerationMviIntent.Drawer -> when (intent.intent) {
                 DrawerIntent.Close -> drawerRouter.closeDrawer()
@@ -257,9 +276,14 @@ abstract class GenerationMviViewModel<S : GenerationMviState, I : GenerationMviI
         }
     }
 
-    protected open fun updateFormPreviousAiGeneration(ai: AiGenerationResult) =
-        updateGenerationState {
-            it
+    protected open fun updateFormPreviousAiGeneration(payload: GenerationFormUpdateEvent.Payload) {
+        val ai = when (payload) {
+            is GenerationFormUpdateEvent.Payload.I2IForm -> payload.ai
+            is GenerationFormUpdateEvent.Payload.T2IForm -> payload.ai
+            else -> return
+        }
+        updateGenerationState { oldState ->
+            oldState
                 .copyState(
                     advancedOptionsVisible = true,
                     prompt = ai.prompt,
@@ -278,6 +302,7 @@ abstract class GenerationMviViewModel<S : GenerationMviState, I : GenerationMviI
                     else state.copyState(selectedSampler = ai.sampler)
                 }
         }
+    }
 
     protected fun setActiveModal(modal: Modal) = updateGenerationState {
         it.copyState(screenModal = modal)
@@ -291,14 +316,13 @@ abstract class GenerationMviViewModel<S : GenerationMviState, I : GenerationMviI
         randomImageDisposable?.addToDisposable()
     }
 
-    private fun generate(fn: () -> Disposable) {
+    private fun generateOnUi(fn: () -> Disposable) {
         generationDisposable?.dispose()
         generationDisposable = null
         val newDisposable = fn()
         generationDisposable = newDisposable
         generationDisposable?.addToDisposable()
     }
-
 
     private fun updateGenerationState(mutation: (GenerationMviState) -> GenerationMviState) =
         runCatching {

@@ -14,8 +14,11 @@ internal class GenerationResultRepositoryImpl(
     mediaStoreGateway: MediaStoreGateway,
     base64ToBitmapConverter: Base64ToBitmapConverter,
     private val localDataSource: GenerationResultDataSource.Local,
-) : CoreMediaStoreRepository(preferenceManager, mediaStoreGateway, base64ToBitmapConverter),
-    GenerationResultRepository {
+) : CoreMediaStoreRepository(
+    preferenceManager,
+    mediaStoreGateway,
+    base64ToBitmapConverter,
+), GenerationResultRepository {
 
     override fun getAll() = localDataSource.queryAll()
 
@@ -25,11 +28,15 @@ internal class GenerationResultRepositoryImpl(
 
     override fun getById(id: Long) = localDataSource.queryById(id)
 
+    override fun getByIds(idList: List<Long>) = localDataSource.queryByIdList(idList)
+
     override fun insert(result: AiGenerationResult) = localDataSource
         .insert(result)
         .flatMap { id -> exportToMediaStore(result).andThen(Single.just(id)) }
 
     override fun deleteById(id: Long) = localDataSource.deleteById(id)
+
+    override fun deleteByIdList(idList: List<Long>) = localDataSource.deleteByIdList(idList)
 
     override fun deleteAll() = localDataSource.deleteAll()
 }

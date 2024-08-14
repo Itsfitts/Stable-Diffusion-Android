@@ -14,8 +14,8 @@ android {
     namespace 'com.shifthackz.aisdv1.app'
     defaultConfig {
         applicationId "com.shifthackz.aisdv1.app"
-        versionName "0.6.1"
-        versionCode 180
+        versionName "0.6.3"
+        versionCode 183
 
         buildConfigField "String", "IMAGE_CDN_URL", "\"https://random.imagecdn.app/\""
         buildConfigField "String", "HUGGING_FACE_URL", "\"https://huggingface.co/\""
@@ -34,8 +34,9 @@ android {
         buildConfigField "String", "DONATE_URL", "\"https://www.buymeacoffee.com/shifthackz\""
         buildConfigField "String", "GITHUB_SOURCE_URL", "\"https://github.com/ShiftHackZ/Stable-Diffusion-Android\""
         buildConfigField "String", "SETUP_INSTRUCTIONS_URL", "\"https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki\""
+        buildConfigField "String", "SWARM_UI_INFO_URL", "\"https://github.com/mcmonkeyprojects/SwarmUI/tree/master/docs\""
 
-        resourceConfigurations = ["en", "ru", "uk", "tr"]
+        resourceConfigurations = ["en", "ru", "uk", "tr", "zh"]
     }
 
     def hasPropertiesFile = new File("app/keystore/signing.properties").exists()
@@ -89,6 +90,7 @@ android {
 dependencies {
     implementation project(":core:common")
     implementation project(":core:imageprocessing")
+    implementation project(":core:notification")
     implementation project(":core:validation")
     implementation project(":presentation")
     implementation project(":network")
@@ -96,6 +98,7 @@ dependencies {
     implementation project(":domain")
     implementation project(":feature:auth")
     implementation project(":feature:diffusion")
+    implementation project(":feature:work")
     implementation project(":data")
     implementation project(":demo")
     implementation di.koinCore
@@ -106,6 +109,7 @@ dependencies {
     implementation log.timber
     implementation ui.catppuccinSplashscreen
     implementation ui.catppuccinLegacy
+    implementation androidx.workManager
 }
 
 kapt {

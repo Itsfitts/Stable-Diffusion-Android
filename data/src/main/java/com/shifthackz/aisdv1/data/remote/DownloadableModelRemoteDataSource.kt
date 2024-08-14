@@ -2,7 +2,7 @@ package com.shifthackz.aisdv1.data.remote
 
 import com.shifthackz.aisdv1.core.common.file.FileProviderDescriptor
 import com.shifthackz.aisdv1.core.common.file.unzip
-import com.shifthackz.aisdv1.data.mappers.mapRawToDomain
+import com.shifthackz.aisdv1.data.mappers.mapRawToCheckpointDomain
 import com.shifthackz.aisdv1.domain.datasource.DownloadableModelDataSource
 import com.shifthackz.aisdv1.domain.entity.DownloadState
 import com.shifthackz.aisdv1.network.api.sdai.DownloadableModelsApi
@@ -18,9 +18,10 @@ internal class DownloadableModelRemoteDataSource(
 
     override fun fetch() = api
         .fetchDownloadableModels()
-        .map(List<DownloadableModelResponse>::mapRawToDomain)
+        .map(List<DownloadableModelResponse>::mapRawToCheckpointDomain)
 
-    override fun download(id: String, url: String): Observable<DownloadState> = Completable
+    override fun download(id: String, url: String): Observable<DownloadState> =
+        Completable
         .fromAction {
             val dir = File("${fileProviderDescriptor.localModelDirPath}/${id}")
             val destination = File(getDestinationPath(id))

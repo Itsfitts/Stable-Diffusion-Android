@@ -14,12 +14,26 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.7"
     }
+    testOptions {
+        unitTests {
+            all {
+                jvmArgs(
+                        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+                        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED"
+                )
+            }
+            returnDefaultValues = true
+            includeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
     api project(":core:ui")
     implementation project(":core:common")
     implementation project(":core:imageprocessing")
+    implementation project(":core:localization")
+    implementation project(":core:notification")
     implementation project(":core:validation")
     implementation project(":domain")
 
@@ -31,6 +45,7 @@ dependencies {
     implementation androidx.appcompat
     implementation androidx.activity
     implementation androidx.pagingRx3
+    implementation androidx.exifinterface
 
     implementation google.material
     implementation apache.stringutils
@@ -45,5 +60,14 @@ dependencies {
     implementation ui.catppuccinSplashscreen
     implementation ui.composeGestures
     implementation ui.composeEasyCrop
-    implementation "androidx.exifinterface:exifinterface:1.3.6"
+
+    testImplementation test.junit
+    testImplementation test.koin
+    testImplementation test.koinJunit
+    testImplementation test.mockk
+    testImplementation test.coroutines
+    testImplementation test.turbine
+    testImplementation test.robolectric
+    testImplementation test.composeUiJunit
+    debugImplementation test.composeUiManifest
 }

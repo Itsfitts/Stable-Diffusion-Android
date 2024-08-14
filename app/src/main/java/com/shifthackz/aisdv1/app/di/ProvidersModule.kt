@@ -1,12 +1,15 @@
 package com.shifthackz.aisdv1.app.di
 
+import android.content.Intent
 import com.shifthackz.aisdv1.app.BuildConfig
+import com.shifthackz.aisdv1.core.common.appbuild.ActivityIntentProvider
 import com.shifthackz.aisdv1.core.common.appbuild.BuildInfoProvider
 import com.shifthackz.aisdv1.core.common.appbuild.BuildType
 import com.shifthackz.aisdv1.core.common.appbuild.BuildVersion
 import com.shifthackz.aisdv1.core.common.file.FileProviderDescriptor
 import com.shifthackz.aisdv1.core.common.links.LinksProvider
 import com.shifthackz.aisdv1.core.common.schedulers.SchedulersProvider
+import com.shifthackz.aisdv1.core.common.time.TimeProvider
 import com.shifthackz.aisdv1.domain.entity.ServerSource
 import com.shifthackz.aisdv1.domain.feature.auth.AuthorizationCredentials
 import com.shifthackz.aisdv1.domain.feature.auth.AuthorizationStore
@@ -19,11 +22,14 @@ import com.shifthackz.aisdv1.network.qualifiers.ApiUrlProvider
 import com.shifthackz.aisdv1.network.qualifiers.CredentialsProvider
 import com.shifthackz.aisdv1.network.qualifiers.NetworkHeaders
 import com.shifthackz.aisdv1.network.qualifiers.NetworkPrefixes
+import com.shifthackz.aisdv1.presentation.activity.AiStableDiffusionActivity
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Scheduler
 import io.reactivex.rxjava3.schedulers.Schedulers
 import org.koin.android.ext.koin.androidApplication
+import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
+import java.util.Date
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
@@ -105,6 +111,7 @@ val providersModule = module {
             override val donateUrl: String = BuildConfig.DONATE_URL
             override val gitHubSourceUrl: String = BuildConfig.GITHUB_SOURCE_URL
             override val setupInstructionsUrl: String = BuildConfig.SETUP_INSTRUCTIONS_URL
+            override val swarmUiInfoUrl: String = BuildConfig.SWARM_UI_INFO_URL
             override val demoModeUrl: String = BuildConfig.DEMO_MODE_API_URL
         }
     }
@@ -134,13 +141,21 @@ val providersModule = module {
         }
     }
 
+    single<TimeProvider> {
+        object : TimeProvider {
+            override fun nanoTime(): Long = System.nanoTime()
+            override fun currentTimeMillis(): Long = System.currentTimeMillis()
+            override fun currentDate(): Date = Date()
+        }
+    }
+
     single<FileProviderDescriptor> {
         object : FileProviderDescriptor {
             override val providerPath: String = "${androidApplication().packageName}.fileprovider"
             override val imagesCacheDirPath: String = "${androidApplication().cacheDir}/images"
             override val logsCacheDirPath: String = "${androidApplication().cacheDir}/logs"
-            override val localModelDirPath: String =
-                "${androidApplication().filesDir.absolutePath}/model"
+            override val localModelDirPath: String = "${androidApplication().filesDir.absolutePath}/model"
+            override val workCacheDirPath: String = "${androidApplication().cacheDir}/work"
         }
     }
 
@@ -154,5 +169,11 @@ val providersModule = module {
 
     single {
         LocalModelIdProvider { get<PreferenceManager>().localModelId }
+    }
+
+    single {
+        ActivityIntentProvider {
+            Intent(androidContext(), AiStableDiffusionActivity::class.java)
+        }
     }
 }

@@ -10,14 +10,16 @@ import androidx.compose.material.icons.filled.Translate
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
+import com.shifthackz.aisdv1.core.localization.Localization
 import com.shifthackz.aisdv1.core.model.asUiText
-import com.shifthackz.aisdv1.presentation.R
-import com.shifthackz.aisdv1.presentation.utils.Constants
 import com.shifthackz.aisdv1.presentation.widget.item.SettingsItem
+import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 
 @Composable
+@Preview
 fun LanguageBottomSheet(
     modifier: Modifier = Modifier,
     onDismissRequest: () -> Unit = {},
@@ -29,8 +31,8 @@ fun LanguageBottomSheet(
             .navigationBarsPadding()
             .padding(bottom = 16.dp),
     ) {
-        Constants.locales.forEach { (locale, display) ->
-            val currentLocale = stringResource(id = R.string.locale)
+        Localization.entries.forEach { (locale, display) ->
+            val currentLocale = stringResource(id = LocalizationR.string.locale)
             SettingsItem(
                 modifier = Modifier
                     .fillMaxWidth()

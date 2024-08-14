@@ -9,6 +9,7 @@ import com.shifthackz.aisdv1.domain.datasource.DownloadableModelDataSource
 import com.shifthackz.aisdv1.domain.datasource.GenerationResultDataSource
 import com.shifthackz.aisdv1.domain.entity.TextToImagePayload
 import com.shifthackz.aisdv1.domain.feature.diffusion.LocalDiffusion
+import com.shifthackz.aisdv1.domain.feature.work.BackgroundWorkObserver
 import com.shifthackz.aisdv1.domain.gateway.MediaStoreGateway
 import com.shifthackz.aisdv1.domain.preference.PreferenceManager
 import com.shifthackz.aisdv1.domain.repository.LocalDiffusionGenerationRepository
@@ -18,16 +19,18 @@ internal class LocalDiffusionGenerationRepositoryImpl(
     mediaStoreGateway: MediaStoreGateway,
     base64ToBitmapConverter: Base64ToBitmapConverter,
     localDataSource: GenerationResultDataSource.Local,
-    preferenceManager: PreferenceManager,
+    backgroundWorkObserver: BackgroundWorkObserver,
+    private val preferenceManager: PreferenceManager,
     private val localDiffusion: LocalDiffusion,
     private val downloadableLocalDataSource: DownloadableModelDataSource.Local,
     private val bitmapToBase64Converter: BitmapToBase64Converter,
     private val schedulersProvider: SchedulersProvider,
 ) : CoreGenerationRepository(
-    mediaStoreGateway,
-    base64ToBitmapConverter,
-    localDataSource,
-    preferenceManager,
+    mediaStoreGateway = mediaStoreGateway,
+    base64ToBitmapConverter = base64ToBitmapConverter,
+    localDataSource = localDataSource,
+    preferenceManager = preferenceManager,
+    backgroundWorkObserver = backgroundWorkObserver,
 ), LocalDiffusionGenerationRepository {
 
     override fun observeStatus() = localDiffusion.observeStatus()
@@ -36,14 +39,14 @@ internal class LocalDiffusionGenerationRepositoryImpl(
         .getSelected()
         .flatMap { model ->
             if (model.downloaded) generate(payload)
-            else Single.error(Throwable("Model not downloaded"))
+            else Single.error(IllegalStateException("Model not downloaded."))
         }
 
     override fun interruptGeneration() = localDiffusion.interrupt()
 
     private fun generate(payload: TextToImagePayload) = localDiffusion
         .process(payload)
-        .subscribeOn(schedulersProvider.computation)
+        .subscribeOn(schedulersProvider.byToken(preferenceManager.localDiffusionSchedulerThread))
         .map(BitmapToBase64Converter::Input)
         .flatMap(bitmapToBase64Converter::invoke)
         .map(BitmapToBase64Converter.Output::base64ImageString)

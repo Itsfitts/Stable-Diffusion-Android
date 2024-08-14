@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.DeviceUnknown
 import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -53,22 +55,25 @@ import androidx.compose.ui.unit.sp
 import com.shifthackz.aisdv1.core.common.file.FileProviderDescriptor
 import com.shifthackz.aisdv1.core.common.math.roundTo
 import com.shifthackz.aisdv1.core.ui.MviComponent
+import com.shifthackz.aisdv1.domain.entity.AiGenerationResult
 import com.shifthackz.aisdv1.domain.entity.ServerSource
-import com.shifthackz.aisdv1.presentation.R
 import com.shifthackz.aisdv1.presentation.core.GenerationMviIntent
 import com.shifthackz.aisdv1.presentation.core.ImageToImageIntent
 import com.shifthackz.aisdv1.presentation.modal.ModalRenderer
 import com.shifthackz.aisdv1.presentation.model.Modal
+import com.shifthackz.aisdv1.presentation.screen.drawer.DrawerIntent
 import com.shifthackz.aisdv1.presentation.screen.inpaint.components.InPaintComponent
 import com.shifthackz.aisdv1.presentation.theme.sliderColors
 import com.shifthackz.aisdv1.presentation.utils.Constants.DENOISING_STRENGTH_MAX
 import com.shifthackz.aisdv1.presentation.utils.Constants.DENOISING_STRENGTH_MIN
 import com.shifthackz.aisdv1.presentation.widget.input.GenerationInputForm
 import com.shifthackz.aisdv1.presentation.widget.toolbar.GenerationBottomToolbar
+import com.shifthackz.aisdv1.presentation.widget.work.BackgroundWorkWidget
 import com.shz.imagepicker.imagepicker.ImagePicker
 import com.shz.imagepicker.imagepicker.model.GalleryPicker
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
+import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 
 @Composable
 fun ImageToImageScreen() {
@@ -107,35 +112,60 @@ private fun ScreenContent(
 ) {
     val promptChipTextFieldState = remember { mutableStateOf(TextFieldValue()) }
     val negativePromptChipTextFieldState = remember { mutableStateOf(TextFieldValue()) }
+    val keyboardController = LocalSoftwareKeyboardController.current
     Box(modifier) {
         Scaffold(
             topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(id = R.string.title_image_to_image),
-                            style = MaterialTheme.typography.headlineMedium,
-                        )
-                    },
-                    actions = {
-                        if (state.mode != ServerSource.LOCAL) {
-                            IconButton(
-                                onClick = {
-                                    processIntent(GenerationMviIntent.SetModal(Modal.PromptBottomSheet))
-                                },
-                            ) {
+                Column {
+                    CenterAlignedTopAppBar(
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                processIntent(GenerationMviIntent.Drawer(DrawerIntent.Open))
+                            }) {
                                 Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = null,
+                                    imageVector = Icons.Default.Menu,
+                                    contentDescription = "Menu",
                                 )
                             }
-                        }
-                    },
-                )
+                        },
+                        title = {
+                            Text(
+                                text = stringResource(id = LocalizationR.string.title_image_to_image),
+                                style = MaterialTheme.typography.headlineMedium,
+                            )
+                        },
+                        actions = {
+                            if (state.mode != ServerSource.LOCAL) {
+                                IconButton(
+                                    onClick = {
+                                        processIntent(
+                                            GenerationMviIntent.SetModal(
+                                                Modal.PromptBottomSheet(
+                                                    AiGenerationResult.Type.IMAGE_TO_IMAGE,
+                                                ),
+                                            ),
+                                        )
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = null,
+                                    )
+                                }
+                            }
+                        },
+                    )
+                    BackgroundWorkWidget(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.background)
+                            .padding(vertical = 4.dp),
+                    )
+                }
             },
             content = { paddingValues ->
                 when (state.mode) {
                     ServerSource.AUTOMATIC1111,
+                    ServerSource.SWARM_UI,
                     ServerSource.HORDE,
                     ServerSource.STABILITY_AI,
                     ServerSource.HUGGING_FACE -> {
@@ -161,7 +191,7 @@ private fun ScreenContent(
                                     Text(
                                         modifier = Modifier.padding(top = 8.dp),
                                         text = stringResource(
-                                            id = R.string.hint_denoising_strength,
+                                            id = LocalizationR.string.hint_denoising_strength,
                                             "${state.denoisingStrength.roundTo(2)}"
                                         ),
                                     )
@@ -182,8 +212,7 @@ private fun ScreenContent(
                         }
                     }
 
-                    ServerSource.OPEN_AI,
-                    ServerSource.LOCAL -> {
+                    else -> {
                         Column(
                             modifier = Modifier
                                 .padding(paddingValues)
@@ -199,21 +228,21 @@ private fun ScreenContent(
                             )
                             Text(
                                 modifier = Modifier.padding(top = 20.dp),
-                                text = stringResource(id = R.string.local_no_img2img_support_title),
+                                text = stringResource(id = LocalizationR.string.local_no_img2img_support_title),
                                 style = MaterialTheme.typography.headlineSmall,
                             )
                             Text(
                                 modifier = Modifier.padding(top = 14.dp),
                                 text = stringResource(
-                                    if (state.mode == ServerSource.LOCAL) R.string.local_no_img2img_support_sub_title
-                                    else R.string.dalle_no_img2img_support_sub_title
+                                    if (state.mode == ServerSource.LOCAL) LocalizationR.string.local_no_img2img_support_sub_title
+                                    else LocalizationR.string.dalle_no_img2img_support_sub_title
                                 ),
                             )
                             Text(
                                 modifier = Modifier.padding(top = 14.dp),
                                 text = stringResource(
-                                    if (state.mode == ServerSource.LOCAL) R.string.local_no_img2img_support_sub_title_2
-                                    else R.string.dalle_no_img2img_support_sub_title_2
+                                    if (state.mode == ServerSource.LOCAL) LocalizationR.string.local_no_img2img_support_sub_title_2
+                                    else LocalizationR.string.dalle_no_img2img_support_sub_title_2
                                 ),
                             )
                         }
@@ -239,6 +268,7 @@ private fun ScreenContent(
                             .padding(horizontal = 16.dp)
                             .padding(bottom = 16.dp),
                         onClick = {
+                            keyboardController?.hide()
                             when (state.mode) {
                                 ServerSource.OPEN_AI,
                                 ServerSource.LOCAL -> processIntent(GenerationMviIntent.Configuration)
@@ -274,9 +304,9 @@ private fun ScreenContent(
                             text = stringResource(
                                 id = when (state.mode) {
                                     ServerSource.LOCAL,
-                                    ServerSource.OPEN_AI -> R.string.action_change_configuration
+                                    ServerSource.OPEN_AI -> LocalizationR.string.action_change_configuration
 
-                                    else -> R.string.action_generate
+                                    else -> LocalizationR.string.action_generate
                                 }
                             ),
                             color = LocalContentColor.current,
@@ -325,7 +355,7 @@ private fun InputImageState(
                         )
                         Text(
                             modifier = Modifier.padding(horizontal = 16.dp),
-                            text = stringResource(id = R.string.in_paint_title),
+                            text = stringResource(id = LocalizationR.string.in_paint_title),
                             color = LocalContentColor.current,
                         )
                     }
@@ -342,7 +372,7 @@ private fun InputImageState(
                     )
                     Text(
                         modifier = Modifier.padding(horizontal = 16.dp),
-                        text = stringResource(id = R.string.action_clear),
+                        text = stringResource(id = LocalizationR.string.action_clear),
                         color = LocalContentColor.current,
                     )
                 }
@@ -394,7 +424,7 @@ private fun InputImageState(
                 )
                 Text(
                     modifier = Modifier.padding(start = 8.dp),
-                    text = stringResource(id = R.string.action_image_picker_random),
+                    text = stringResource(id = LocalizationR.string.action_image_picker_random),
                     fontSize = 17.sp,
                 )
             }
@@ -434,8 +464,8 @@ private fun ImagePickButtonBox(
             modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
             text = stringResource(
                 id = when (buttonType) {
-                    ImagePickButton.PHOTO -> R.string.action_image_picker_gallery
-                    ImagePickButton.CAMERA -> R.string.action_image_picker_camera
+                    ImagePickButton.PHOTO -> LocalizationR.string.action_image_picker_gallery
+                    ImagePickButton.CAMERA -> LocalizationR.string.action_image_picker_camera
                 }
             ),
             fontSize = 17.sp,
