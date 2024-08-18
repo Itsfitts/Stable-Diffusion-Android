@@ -3,7 +3,7 @@ name: Build and Compile APK
   push:
     branches:
       - master
-      - main
+      - termux-experimental
 
 jobs:
   build_apk:
@@ -15,58 +15,15 @@ jobs:
         with:
           java-version: 17
           distribution: 'adopt'
-      - name: Build APK
+      - name: Build APKs
         run: |
           chmod +x ./gradlew
           ./gradlew assembleRelease
-      - name: Upload APK
+          ./gradlew assembleDebug
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: app-release.apk
-          path: app/build/outputs/apk/release/app-release.apkname: Build and Release APK
-"on":
-  push:
-    branches:
-      - main
-      - master
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: 'adopt'
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
-      - name: Resolve dependencies
-        run: ./gradlew dependencies
-      - name: Build release APK
-        run: ./gradlew assembleRelease
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: app/build/outputs/apk/release/*.apk
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: app-release
-          path: app/build/outputs/apk/release
-      - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-          files: app/build/outputs/apk/release/*.apk
+          name: sdAI-release.apk
+          path: app/build/outputs/apk/release/sdAI-release.apk
+          name: sdAI-debug.apk
+          path: app/build/outputs/apk/release/sdAI-debug.apk
