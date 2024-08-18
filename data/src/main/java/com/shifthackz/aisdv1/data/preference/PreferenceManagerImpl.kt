@@ -3,6 +3,7 @@ package com.shifthackz.aisdv1.data.preference
 import android.content.SharedPreferences
 import com.shifthackz.aisdv1.core.common.extensions.fixUrlSlashes
 import com.shifthackz.aisdv1.core.common.extensions.shouldUseNewMediaStore
+import com.shifthackz.aisdv1.core.common.file.LOCAL_DIFFUSION_CUSTOM_PATH
 import com.shifthackz.aisdv1.core.common.schedulers.SchedulersToken
 import com.shifthackz.aisdv1.domain.entity.ColorToken
 import com.shifthackz.aisdv1.domain.entity.DarkThemeToken
@@ -58,6 +59,15 @@ class PreferenceManagerImpl(
             .putBoolean(KEY_DEVELOPER_MODE, value)
             .apply()
             .also { onPreferencesChanged() }
+
+    override var localDiffusionCustomModelPath: String
+        get() = preferences.getString(
+            KEY_LOCAL_DIFFUSION_CUSTOM_MODEL_PATH,
+            LOCAL_DIFFUSION_CUSTOM_PATH,
+        ) ?: LOCAL_DIFFUSION_CUSTOM_PATH
+        set(value) = preferences.edit()
+            .putString(KEY_LOCAL_DIFFUSION_CUSTOM_MODEL_PATH, value)
+            .apply()
 
     override var localDiffusionAllowCancel: Boolean
         get() = preferences.getBoolean(KEY_ALLOW_LOCAL_DIFFUSION_CANCEL, false)
@@ -173,6 +183,12 @@ class PreferenceManagerImpl(
             .apply()
             .also { onPreferencesChanged() }
 
+    override var onBoardingComplete: Boolean
+        get() = preferences.getBoolean(KEY_ON_BOARDING_COMPLETE, false)
+        set(value) = preferences.edit()
+            .putBoolean(KEY_ON_BOARDING_COMPLETE, value)
+            .apply()
+
     override var forceSetupAfterUpdate: Boolean
         get() = preferences.getBoolean(KEY_FORCE_SETUP_AFTER_UPDATE, true)
         set(value) = preferences.edit()
@@ -285,6 +301,7 @@ class PreferenceManagerImpl(
         const val KEY_SWARM_MODEL = "key_swarm_model"
         const val KEY_DEMO_MODE = "key_demo_mode"
         const val KEY_DEVELOPER_MODE = "key_developer_mode"
+        const val KEY_LOCAL_DIFFUSION_CUSTOM_MODEL_PATH = "key_local_diffusion_custom_model_path"
         const val KEY_ALLOW_LOCAL_DIFFUSION_CANCEL = "key_allow_local_diffusion_cancel"
         const val KEY_LOCAL_DIFFUSION_SCHEDULER_THREAD = "key_local_diffusion_scheduler_thread"
         const val KEY_MONITOR_CONNECTIVITY = "key_monitor_connectivity"
@@ -300,6 +317,7 @@ class PreferenceManagerImpl(
         const val KEY_HUGGING_FACE_MODEL_KEY = "key_hugging_face_model_key"
         const val KEY_STABILITY_AI_API_KEY = "key_stability_ai_api_key"
         const val KEY_STABILITY_AI_ENGINE_ID_KEY = "key_stability_ai_engine_id_key"
+        const val KEY_ON_BOARDING_COMPLETE = "key_on_boarding_complete"
         const val KEY_FORCE_SETUP_AFTER_UPDATE = "force_upd_setup_v0.x.x-v0.6.2"
         const val KEY_LOCAL_MODEL_ID = "key_local_model_id"
         const val KEY_LOCAL_NN_API = "key_local_nn_api"

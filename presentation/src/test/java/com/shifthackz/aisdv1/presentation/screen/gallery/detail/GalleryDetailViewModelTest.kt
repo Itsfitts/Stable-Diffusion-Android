@@ -3,6 +3,7 @@
 package com.shifthackz.aisdv1.presentation.screen.gallery.detail
 
 import android.graphics.Bitmap
+import app.cash.turbine.test
 import com.shifthackz.aisdv1.core.imageprocessing.Base64ToBitmapConverter
 import com.shifthackz.aisdv1.core.model.asUiText
 import com.shifthackz.aisdv1.domain.entity.AiGenerationResult
@@ -80,30 +81,28 @@ class GalleryDetailViewModelTest : CoreViewModelTest<GalleryDetailViewModel>() {
 
     @Test
     fun `initialized, loaded ai generation result, expected UI state is Content`() {
-        runTest {
-            val expected = GalleryDetailState.Content(
-                tabs = GalleryDetailState.Tab.consume(mockAiGenerationResult.type),
-                generationType = mockAiGenerationResult.type,
-                id = mockAiGenerationResult.id,
-                bitmap = stubBitmap,
-                inputBitmap = stubBitmap,
-                createdAt = mockAiGenerationResult.createdAt.toString().asUiText(),
-                type = mockAiGenerationResult.type.key.asUiText(),
-                prompt = mockAiGenerationResult.prompt.asUiText(),
-                negativePrompt = mockAiGenerationResult.negativePrompt.asUiText(),
-                size = "512 X 512".asUiText(),
-                samplingSteps = mockAiGenerationResult.samplingSteps.toString().asUiText(),
-                cfgScale = mockAiGenerationResult.cfgScale.toString().asUiText(),
-                restoreFaces = mockAiGenerationResult.restoreFaces.mapToUi(),
-                sampler = mockAiGenerationResult.sampler.asUiText(),
-                seed = mockAiGenerationResult.seed.asUiText(),
-                subSeed = mockAiGenerationResult.subSeed.asUiText(),
-                subSeedStrength = mockAiGenerationResult.subSeedStrength.toString().asUiText(),
-                denoisingStrength = mockAiGenerationResult.denoisingStrength.toString().asUiText(),
-            )
-            val actual = viewModel.state.value
-            Assert.assertEquals(expected, actual)
-        }
+        val expected = GalleryDetailState.Content(
+            tabs = GalleryDetailState.Tab.consume(mockAiGenerationResult.type),
+            generationType = mockAiGenerationResult.type,
+            id = mockAiGenerationResult.id,
+            bitmap = stubBitmap,
+            inputBitmap = stubBitmap,
+            createdAt = mockAiGenerationResult.createdAt.toString().asUiText(),
+            type = mockAiGenerationResult.type.key.asUiText(),
+            prompt = mockAiGenerationResult.prompt.asUiText(),
+            negativePrompt = mockAiGenerationResult.negativePrompt.asUiText(),
+            size = "512 X 512".asUiText(),
+            samplingSteps = mockAiGenerationResult.samplingSteps.toString().asUiText(),
+            cfgScale = mockAiGenerationResult.cfgScale.toString().asUiText(),
+            restoreFaces = mockAiGenerationResult.restoreFaces.mapToUi(),
+            sampler = mockAiGenerationResult.sampler.asUiText(),
+            seed = mockAiGenerationResult.seed.asUiText(),
+            subSeed = mockAiGenerationResult.subSeed.asUiText(),
+            subSeedStrength = mockAiGenerationResult.subSeedStrength.toString().asUiText(),
+            denoisingStrength = mockAiGenerationResult.denoisingStrength.toString().asUiText(),
+        )
+        val actual = viewModel.state.value
+        Assert.assertEquals(expected, actual)
     }
 
     @Test
@@ -150,14 +149,16 @@ class GalleryDetailViewModelTest : CoreViewModelTest<GalleryDetailViewModel>() {
         every {
             stubGalleryDetailBitmapExporter(any())
         } returns Single.just(stubFile)
+
         viewModel.processIntent(GalleryDetailIntent.Export.Image)
+
+        runTest {
+            viewModel.effect.test {
+                Assert.assertEquals(GalleryDetailEffect.ShareImageFile(stubFile), awaitItem())
+            }
+        }
         verify {
             stubGalleryDetailBitmapExporter(stubBitmap)
-        }
-        runTest {
-            val expected = GalleryDetailEffect.ShareImageFile(stubFile)
-            val actual = viewModel.effect.firstOrNull()
-            Assert.assertEquals(expected, actual)
         }
     }
 

@@ -35,6 +35,7 @@ data class ServerSetupState(
     val huggingFaceModel: String = "",
     val localModels: List<LocalModel> = emptyList(),
     val localCustomModel: Boolean = false,
+    val localCustomModelPath: String = "",
     val passwordVisible: Boolean = false,
     val serverUrlValidationError: UiText? = null,
     val swarmUiUrlValidationError: UiText? = null,
@@ -44,6 +45,7 @@ data class ServerSetupState(
     val huggingFaceApiKeyValidationError: UiText? = null,
     val openAiApiKeyValidationError: UiText? = null,
     val stabilityAiApiKeyValidationError: UiText? = null,
+    val localCustomModelPathValidationError: UiText? = null,
 ) : MviState, KoinComponent {
 
     val demoModeUrl: String
@@ -83,15 +85,6 @@ data class ServerSetupState(
         val downloadState: DownloadState = DownloadState.Unknown,
         val selected: Boolean = false,
     )
-}
-
-enum class ServerSetupLaunchSource {
-    SPLASH,
-    SETTINGS;
-
-    companion object {
-        fun fromKey(key: Int) = entries.firstOrNull { it.ordinal == key } ?: SPLASH
-    }
 }
 
 val Configuration.authType: ServerSetupState.AuthType

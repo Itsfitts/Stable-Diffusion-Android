@@ -1,6 +1,7 @@
 package com.shifthackz.aisdv1.presentation.screen.setup
 
 import com.shifthackz.aisdv1.core.validation.common.CommonStringValidator
+import com.shifthackz.aisdv1.core.validation.path.FilePathValidator
 import com.shifthackz.aisdv1.core.validation.url.UrlValidator
 import com.shifthackz.aisdv1.domain.entity.Configuration
 import com.shifthackz.aisdv1.domain.entity.DownloadState
@@ -17,6 +18,7 @@ import com.shifthackz.aisdv1.presentation.core.CoreViewModelTest
 import com.shifthackz.aisdv1.presentation.mocks.mockHuggingFaceModels
 import com.shifthackz.aisdv1.presentation.mocks.mockLocalAiModels
 import com.shifthackz.aisdv1.presentation.mocks.mockServerSetupStateLocalModel
+import com.shifthackz.aisdv1.presentation.model.LaunchSource
 import com.shifthackz.aisdv1.presentation.model.Modal
 import com.shifthackz.aisdv1.presentation.navigation.router.main.MainRouter
 import com.shifthackz.aisdv1.presentation.stub.stubSchedulersProvider
@@ -38,6 +40,7 @@ class ServerSetupViewModelTest : CoreViewModelTest<ServerSetupViewModel>() {
     private val stubFetchAndGetHuggingFaceModelsUseCase = mockk<FetchAndGetHuggingFaceModelsUseCase>()
     private val stubUrlValidator = mockk<UrlValidator>()
     private val stubCommonStringValidator = mockk<CommonStringValidator>()
+    private val stubFilePathValidator = mockk<FilePathValidator>()
     private val stubSetupConnectionInterActor = mockk<SetupConnectionInterActor>()
     private val stubDownloadModelUseCase = mockk<DownloadModelUseCase>()
     private val stubDeleteModelUseCase = mockk<DeleteModelUseCase>()
@@ -46,12 +49,13 @@ class ServerSetupViewModelTest : CoreViewModelTest<ServerSetupViewModel>() {
     private val stubMainRouter = mockk<MainRouter>()
 
     override fun initializeViewModel() = ServerSetupViewModel(
-        launchSource = ServerSetupLaunchSource.SETTINGS,
+        launchSource = LaunchSource.SETTINGS,
         getConfigurationUseCase = stubGetConfigurationUseCase,
         getLocalAiModelsUseCase = stubGetLocalAiModelsUseCase,
         fetchAndGetHuggingFaceModelsUseCase = stubFetchAndGetHuggingFaceModelsUseCase,
         urlValidator = stubUrlValidator,
         stringValidator = stubCommonStringValidator,
+        filePathValidator = stubFilePathValidator,
         setupConnectionInterActor = stubSetupConnectionInterActor,
         downloadModelUseCase = stubDownloadModelUseCase,
         deleteModelUseCase = stubDeleteModelUseCase,

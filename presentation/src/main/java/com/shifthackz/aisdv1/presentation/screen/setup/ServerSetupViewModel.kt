@@ -5,6 +5,7 @@ import com.shifthackz.aisdv1.core.common.schedulers.SchedulersProvider
 import com.shifthackz.aisdv1.core.common.schedulers.subscribeOnMainThread
 import com.shifthackz.aisdv1.core.model.asUiText
 import com.shifthackz.aisdv1.core.validation.common.CommonStringValidator
+import com.shifthackz.aisdv1.core.validation.path.FilePathValidator
 import com.shifthackz.aisdv1.core.validation.url.UrlValidator
 import com.shifthackz.aisdv1.core.viewmodel.MviRxViewModel
 import com.shifthackz.aisdv1.domain.entity.DownloadState
@@ -20,6 +21,7 @@ import com.shifthackz.aisdv1.domain.usecase.downloadable.DownloadModelUseCase
 import com.shifthackz.aisdv1.domain.usecase.downloadable.GetLocalAiModelsUseCase
 import com.shifthackz.aisdv1.domain.usecase.huggingface.FetchAndGetHuggingFaceModelsUseCase
 import com.shifthackz.aisdv1.domain.usecase.settings.GetConfigurationUseCase
+import com.shifthackz.aisdv1.presentation.model.LaunchSource
 import com.shifthackz.aisdv1.presentation.model.Modal
 import com.shifthackz.aisdv1.presentation.navigation.router.main.MainRouter
 import com.shifthackz.aisdv1.presentation.screen.setup.mappers.mapLocalCustomModelSwitchState
@@ -31,12 +33,13 @@ import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.kotlin.subscribeBy
 
 class ServerSetupViewModel(
-    launchSource: ServerSetupLaunchSource,
+    launchSource: LaunchSource,
     getConfigurationUseCase: GetConfigurationUseCase,
     getLocalAiModelsUseCase: GetLocalAiModelsUseCase,
     fetchAndGetHuggingFaceModelsUseCase: FetchAndGetHuggingFaceModelsUseCase,
     private val urlValidator: UrlValidator,
     private val stringValidator: CommonStringValidator,
+    private val filePathValidator: FilePathValidator,
     private val setupConnectionInterActor: SetupConnectionInterActor,
     private val downloadModelUseCase: DownloadModelUseCase,
     private val deleteModelUseCase: DeleteModelUseCase,
@@ -47,7 +50,7 @@ class ServerSetupViewModel(
 ) : MviRxViewModel<ServerSetupState, ServerSetupIntent, ServerSetupEffect>() {
 
     override val initialState = ServerSetupState(
-        showBackNavArrow = launchSource == ServerSetupLaunchSource.SETTINGS,
+        showBackNavArrow = launchSource == LaunchSource.SETTINGS,
     )
 
     private val credentials: AuthorizationCredentials
@@ -82,6 +85,7 @@ class ServerSetupViewModel(
                         stabilityAiApiKey = configuration.stabilityAiApiKey,
                         localModels = localModels.mapToUi(),
                         localCustomModel = localModels.mapLocalCustomModelSwitchState(),
+                        localCustomModelPath = configuration.localModelPath,
                         mode = configuration.source,
                         demoMode = configuration.demoMode,
                         serverUrl = configuration.serverUrl,
@@ -227,6 +231,13 @@ class ServerSetupViewModel(
         }
 
         ServerSetupIntent.ConnectToLocalHost -> connectToServer()
+
+        is ServerSetupIntent.SelectLocalModelPath -> updateState {
+            it.copy(
+                localCustomModelPath = intent.value,
+                localCustomModelPathValidationError = null,
+            )
+        }
     }
 
     private fun validateAndConnectToServer() {
@@ -278,7 +289,15 @@ class ServerSetupViewModel(
         }
 
         ServerSource.LOCAL -> {
-            currentState.localModels.find { it.selected && it.downloaded } != null
+            if (currentState.localCustomModel) {
+                val validation = filePathValidator(currentState.localCustomModelPath)
+                updateState {
+                    it.copy(localCustomModelPathValidationError = validation.mapToUi())
+                }
+                validation.isValid
+            } else {
+                currentState.localModels.find { it.selected && it.downloaded } != null
+            }
         }
 
         ServerSource.HUGGING_FACE -> {
@@ -382,6 +401,7 @@ class ServerSetupViewModel(
     }
 
     private fun connectToLocalDiffusion(): Single<Result<Unit>> {
+        preferenceManager.localDiffusionCustomModelPath = currentState.localCustomModelPath
         val localModelId = currentState.localModels.find { it.selected }?.id ?: ""
         return setupConnectionInterActor.connectToLocal(localModelId)
     }

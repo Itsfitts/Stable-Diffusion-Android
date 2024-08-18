@@ -23,13 +23,16 @@ object Constants {
     const val ROUTE_LOGGER = "logger"
     const val ROUTE_IN_PAINT = "in_paint"
     const val ROUTE_DONATE = "donate"
+    const val ROUTE_ONBOARDING = "onboarding"
+    const val ROUTE_ONBOARDING_FULL = "$ROUTE_ONBOARDING/{$PARAM_SOURCE}"
 
     const val SUB_SEED_STRENGTH_MIN = 0f
     const val SUB_SEED_STRENGTH_MAX = 1f
 
-    const val SAMPLING_STEPS_RANGE_MIN = 10
+    const val SAMPLING_STEPS_RANGE_MIN = 1
     const val SAMPLING_STEPS_RANGE_MAX = 150
     const val SAMPLING_STEPS_RANGE_STABILITY_AI_MAX = 50
+    const val SAMPLING_STEPS_LOCAL_DIFFUSION_MAX = 50
 
     const val BATCH_RANGE_MIN = 1
     const val BATCH_RANGE_MAX = 20

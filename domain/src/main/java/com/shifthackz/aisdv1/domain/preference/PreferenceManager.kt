@@ -12,6 +12,7 @@ interface PreferenceManager {
     var swarmUiModel: String
     var demoMode: Boolean
     var developerMode: Boolean
+    var localDiffusionCustomModelPath: String
     var localDiffusionAllowCancel: Boolean
     var localDiffusionSchedulerThread: SchedulersToken
     var monitorConnectivity: Boolean
@@ -27,6 +28,7 @@ interface PreferenceManager {
     var huggingFaceModel: String
     var stabilityAiApiKey: String
     var stabilityAiEngineId: String
+    var onBoardingComplete: Boolean
     var forceSetupAfterUpdate: Boolean
     var localModelId: String
     var localUseNNAPI: Boolean
