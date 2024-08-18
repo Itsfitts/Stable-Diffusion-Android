@@ -15,15 +15,22 @@ jobs:
         with:
           java-version: 17
           distribution: 'adopt'
-      - name: Build APKs
+      - name: Build Release APK
         run: |
           chmod +x ./gradlew
           ./gradlew assembleRelease
-          ./gradlew assembleDebug
-      - name: Upload APKs
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: sdAI-release.apk
           path: app/build/outputs/apk/release/sdAI-release.apk
+      - name: Build Debug APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
           name: sdAI-debug.apk
-          path: app/build/outputs/apk/release/sdAI-debug.apk
+          path: app/build/outputs/apk/debug/sdAI-debug.apk
+
