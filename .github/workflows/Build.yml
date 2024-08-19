@@ -8,10 +8,10 @@ jobs:
       - name: Decode Keystore
         id: decode_keystore
         uses: timheuer/base64-to-file@v1
-        with:
-          fileName: 'keystore/itsSigned.keystore'
-          encodedString: ${{ secrets.KEYSTORE }}
-          - uses: actions/checkout@v4
+          with:
+            fileName: 'keystore/itsSigned.keystore'
+            encodedString: ${{ secrets.KEYSTORE }}
+            - uses: actions/checkout@v4
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -27,6 +27,6 @@ jobs:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           - name: Upload
         uses: actions/upload-artifact@v2
-        with:
+         with:
           name: Build Artifacts
           path: app/build/outputs/
