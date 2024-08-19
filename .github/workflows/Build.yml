@@ -1,0 +1,32 @@
+name: Build Release App Bundle
+
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decode Keystore
+        id: decode_keystore
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: 'keystore/itsSigned.keystore'
+          encodedString: ${{ secrets.KEYSTORE }}
+          - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'adopt'
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+      - name: build prod
+        run: ./gradlew app:assembleRelease
+        env:
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: Build Artifacts
+          path: app/build/outputs/
