@@ -1,5 +1,6 @@
 package com.shifthackz.aisdv1.presentation.screen.onboarding.page
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -36,6 +37,7 @@ import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 @Composable
 fun ProviderPageContent(
     modifier: Modifier = Modifier,
+    isPageVisible: Boolean = false,
 ) = Column(
     modifier = modifier.fillMaxSize(),
     horizontalAlignment = Alignment.CenterHorizontally,
@@ -45,6 +47,7 @@ fun ProviderPageContent(
         mutableStateOf(
             ServerSetupState(
                 showBackNavArrow = false,
+                onBoardingDemo = true,
             )
         )
     }
@@ -61,17 +64,20 @@ fun ProviderPageContent(
     ) {
         CompositionLocalProvider(LocalDensity provides onBoardingDensity) {
             ServerSetupScreenContent(
-                modifier = Modifier
-                    .gesturesDisabled()
-                    .aspectRatio(onBoardingPhoneAspectRatio),
+                modifier = Modifier.aspectRatio(onBoardingPhoneAspectRatio),
                 state = serverState,
+            )
+            Box(
+                modifier = Modifier
+                    .aspectRatio(onBoardingPhoneAspectRatio)
+                    .gesturesDisabled(),
             )
         }
     }
     Spacer(modifier = Modifier.weight(1f))
-    DisposableEffect(Unit) {
+    DisposableEffect(isPageVisible) {
         val job = scope.launch {
-            while (true) {
+            while (isPageVisible) {
                 delay(1200)
                 serverState = serverState.copy(
                     mode = ServerSource.entries.random(),

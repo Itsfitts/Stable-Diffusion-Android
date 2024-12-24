@@ -5,6 +5,7 @@ import com.shifthackz.aisdv1.core.common.extensions.EmptyLambda
 import com.shifthackz.aisdv1.core.common.extensions.shouldUseNewMediaStore
 import com.shifthackz.aisdv1.core.common.log.errorLog
 import com.shifthackz.aisdv1.core.common.model.Quadruple
+import com.shifthackz.aisdv1.core.common.schedulers.DispatchersProvider
 import com.shifthackz.aisdv1.core.common.schedulers.SchedulersProvider
 import com.shifthackz.aisdv1.core.common.schedulers.subscribeOnMainThread
 import com.shifthackz.aisdv1.core.model.asUiText
@@ -24,9 +25,11 @@ import com.shifthackz.aisdv1.presentation.screen.debug.DebugMenuAccessor
 import com.shifthackz.aisdv1.presentation.screen.drawer.DrawerIntent
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.kotlin.subscribeBy
+import java.util.concurrent.TimeUnit
 import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 
 class SettingsViewModel(
+    dispatchersProvider: DispatchersProvider,
     getStableDiffusionModelsUseCase: GetStableDiffusionModelsUseCase,
     observeStabilityAiCreditsUseCase: ObserveStabilityAiCreditsUseCase,
     private val selectStableDiffusionModelUseCase: SelectStableDiffusionModelUseCase,
@@ -41,9 +44,12 @@ class SettingsViewModel(
 
     override val initialState = SettingsState()
 
+    override val effectDispatcher = dispatchersProvider.immediate
+
     private val appVersionProducer = Flowable.fromCallable { buildInfoProvider.toString() }
 
     private val sdModelsProducer = getStableDiffusionModelsUseCase()
+        .timeout(10L, TimeUnit.SECONDS)
         .toFlowable()
         .onErrorReturn { emptyList() }
 
@@ -138,7 +144,7 @@ class SettingsViewModel(
             }
 
             is SettingsIntent.UpdateFlag.NNAPI -> {
-                preferenceManager.localUseNNAPI = intent.flag
+                preferenceManager.localOnnxUseNNAPI = intent.flag
             }
 
             is SettingsIntent.UpdateFlag.TaggedInput -> {

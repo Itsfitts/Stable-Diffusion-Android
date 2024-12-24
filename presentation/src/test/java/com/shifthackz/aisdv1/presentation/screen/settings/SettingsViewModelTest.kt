@@ -18,6 +18,7 @@ import com.shifthackz.aisdv1.presentation.model.Modal
 import com.shifthackz.aisdv1.presentation.navigation.router.drawer.DrawerRouter
 import com.shifthackz.aisdv1.presentation.navigation.router.main.MainRouter
 import com.shifthackz.aisdv1.presentation.screen.debug.DebugMenuAccessor
+import com.shifthackz.aisdv1.presentation.stub.stubDispatchersProvider
 import com.shifthackz.aisdv1.presentation.stub.stubSchedulersProvider
 import io.mockk.every
 import io.mockk.mockk
@@ -50,6 +51,7 @@ class SettingsViewModelTest : CoreViewModelTest<SettingsViewModel>() {
     private val stubDebugMenuAccessor = mockk<DebugMenuAccessor>()
 
     override fun initializeViewModel() = SettingsViewModel(
+        dispatchersProvider = stubDispatchersProvider,
         getStableDiffusionModelsUseCase = stubGetStableDiffusionModelsUseCase,
         observeStabilityAiCreditsUseCase = stubObserveStabilityAiCreditsUseCase,
         selectStableDiffusionModelUseCase = stubSelectStableDiffusionModelUseCase,
@@ -235,13 +237,13 @@ class SettingsViewModelTest : CoreViewModelTest<SettingsViewModel>() {
     @Test
     fun `given received UpdateFlag NNAPI intent, expected localUseNNAPI preference updated`() {
         every {
-            stubPreferenceManager::localUseNNAPI.set(any())
+            stubPreferenceManager::localOnnxUseNNAPI.set(any())
         } returns Unit
 
         viewModel.processIntent(SettingsIntent.UpdateFlag.NNAPI(true))
 
         verify {
-            stubPreferenceManager::localUseNNAPI.set(true)
+            stubPreferenceManager::localOnnxUseNNAPI.set(true)
         }
     }
 

@@ -133,8 +133,10 @@
     <string name="hint_swarm_ui_title">Swarm UI URL\'nizi sağlayın</string>
     <string name="hint_swarm_ui_sub_title">Araçlara kolay erişim, yüksek performans ve genişletilebilirlik üzerine odaklanan Modüler, Kararlı Yaygın Web Kullanıcı Arayüzü.</string>
 
-    <string name="hint_local_diffusion_sub_title">Bu yapılandırma, telefonunuzda uzak sunucuya/buluta bağlanmaya gerek kalmadan Stable Diffusion AI nesillerini çalıştırmanıza izin verir.</string>
+    <string name="hint_local_diffusion_sub_title">Bu yapılandırma Microsoft ONNX çalışma zamanını kullanır ve uzak bir sunucuya/buluta bağlanmaya gerek kalmadan telefonunuzda Stable Diffusion AI nesillerini çalıştırmanıza olanak tanır.</string>
     <string name="hint_local_diffusion_warning">Uyarı! Yerel Yayılma işlevi beta testindedir. Yerel modu kullanarak yüksek kaliteli görüntüler beklemeyin. \n\nBu uygulama, güçlü olmayan telefonlarda iyi çalışmayabilir. Oluşturma performansı ve hızı, telefonunuzun kaynaklarına (CPU, RAM) ve oluşturulan görüntünün boyutuna bağlıdır (görüntü boyutu ne kadar küçükse, oluşturma o kadar hızlı olur).</string>
+
+    <string name="hint_mediapipe_sub_title">Bu yapılandırma Google AI MediaPipe çalışma zamanını kullanır ve uzak bir sunucuya/buluta bağlanmaya gerek kalmadan telefonunuzda Stable Diffusion AI nesillerini çalıştırmanıza olanak tanır.</string>
 
     <string name="drawer_web_ui">Web arayüzü</string>
 
@@ -359,4 +361,17 @@
     <string name="on_boarding_page_local_title">[Çevrimdışı] nesil\nYerel Dağıtım.</string>
     <string name="on_boarding_page_ui_title">Uygulamayı özelleştirin,\n[kendinizin] yapın!</string>
     <string name="on_boarding_page_provider_title">Nesil sağlayıcıyı\nseçme [Özgürlüğü].</string>
+
+    <string name="report_title">Görüntüyü Şikayet Et</string>
+    <string name="report_submit">Şikayeti Gönder</string>
+    <string name="report_description">Şikayet açıklaması</string>
+    <string name="report_sent">Şikayetiniz gönderildi!</string>
+    <string name="report_done">Geri dön</string>
+
+    <string name="report_reason_inappropriate_content">Uygunsuz içerik</string>
+    <string name="report_reason_violence">Şiddet</string>
+    <string name="report_reason_hateful_speech">Nefret söylemi</string>
+    <string name="report_reason_intellectual">Fikri mülkiyet ihlali</string>
+    <string name="report_reason_adult">Yetişkin içeriği</string>
+    <string name="report_reason_other">Diğer</string>
 </resources>

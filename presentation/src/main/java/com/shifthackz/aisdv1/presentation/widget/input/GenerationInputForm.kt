@@ -18,6 +18,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
@@ -41,6 +42,7 @@ import com.shifthackz.aisdv1.presentation.core.GenerationMviIntent
 import com.shifthackz.aisdv1.presentation.core.GenerationMviState
 import com.shifthackz.aisdv1.presentation.model.Modal
 import com.shifthackz.aisdv1.presentation.theme.sliderColors
+import com.shifthackz.aisdv1.presentation.theme.textFieldColors
 import com.shifthackz.aisdv1.presentation.utils.Constants
 import com.shifthackz.aisdv1.presentation.utils.Constants.BATCH_RANGE_MAX
 import com.shifthackz.aisdv1.presentation.utils.Constants.BATCH_RANGE_MIN
@@ -115,6 +117,7 @@ fun GenerationInputForm(
             },
             label = { Text(stringResource(id = LocalizationR.string.width)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            colors = textFieldColors,
         )
         TextField(
             modifier = modifier.padding(start = 4.dp),
@@ -138,6 +141,7 @@ fun GenerationInputForm(
             },
             label = { Text(stringResource(id = LocalizationR.string.height)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            colors = textFieldColors,
         )
     }
 
@@ -148,7 +152,7 @@ fun GenerationInputForm(
                 ServerSource.SWARM_UI,
                 ServerSource.STABILITY_AI,
                 ServerSource.HUGGING_FACE,
-                ServerSource.LOCAL -> EngineSelectionComponent(
+                ServerSource.LOCAL_MICROSOFT_ONNX -> EngineSelectionComponent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp),
@@ -197,6 +201,7 @@ fun GenerationInputForm(
                 value = state.prompt,
                 onValueChange = { processIntent(GenerationMviIntent.Update.Prompt(it)) },
                 label = { Text(stringResource(id = LocalizationR.string.hint_prompt)) },
+                colors = textFieldColors,
             )
         }
 
@@ -206,7 +211,7 @@ fun GenerationInputForm(
             ServerSource.SWARM_UI,
             ServerSource.HUGGING_FACE,
             ServerSource.STABILITY_AI,
-            ServerSource.LOCAL -> {
+            ServerSource.LOCAL_MICROSOFT_ONNX -> {
                 if (state.formPromptTaggedInput) {
                     ChipTextFieldWithItem(
                         modifier = Modifier
@@ -239,6 +244,7 @@ fun GenerationInputForm(
                         value = state.negativePrompt,
                         onValueChange = { processIntent(GenerationMviIntent.Update.NegativePrompt(it)) },
                         label = { Text(stringResource(id = LocalizationR.string.hint_prompt_negative)) },
+                        colors = textFieldColors,
                     )
                 }
             }
@@ -256,7 +262,7 @@ fun GenerationInputForm(
 
             when (state.mode) {
                 ServerSource.HORDE,
-                ServerSource.LOCAL -> {
+                ServerSource.LOCAL_MICROSOFT_ONNX -> {
                     DropdownTextField(
                         modifier = localModifier.padding(end = 4.dp),
                         label = LocalizationR.string.width.asUiText(),
@@ -295,6 +301,7 @@ fun GenerationInputForm(
                         displayDelegate = { it.key.asUiText() },
                     )
                 }
+                else -> Unit
             }
         }
 
@@ -421,6 +428,7 @@ fun GenerationInputForm(
                                 )
                             }
                         },
+                        colors = textFieldColors,
                     )
                 }
                 // NSFW flag specifically for Horde API
@@ -467,6 +475,7 @@ fun GenerationInputForm(
                                 )
                             }
                         },
+                        colors = textFieldColors,
                     )
 
                     else -> Unit
@@ -497,9 +506,11 @@ fun GenerationInputForm(
                     else -> Unit
                 }
 
+                //Steps not available for open ai
                 if (state.mode != ServerSource.OPEN_AI) {
                     val stepsMax = when (state.mode) {
-                        ServerSource.LOCAL -> SAMPLING_STEPS_LOCAL_DIFFUSION_MAX
+                        ServerSource.LOCAL_MICROSOFT_ONNX -> SAMPLING_STEPS_LOCAL_DIFFUSION_MAX
+                        ServerSource.LOCAL_GOOGLE_MEDIA_PIPE -> SAMPLING_STEPS_LOCAL_DIFFUSION_MAX
                         ServerSource.STABILITY_AI -> SAMPLING_STEPS_RANGE_STABILITY_AI_MAX
                         else -> SAMPLING_STEPS_RANGE_MAX
                     }
@@ -519,24 +530,31 @@ fun GenerationInputForm(
                             processIntent(GenerationMviIntent.Update.SamplingSteps(it.roundToInt()))
                         },
                     )
+                }
 
-                    Text(
-                        modifier = Modifier.padding(top = 8.dp),
-                        text = stringResource(
-                            LocalizationR.string.hint_cfg_scale,
-                            "${state.cfgScale.roundTo(2)}",
-                        ),
-                    )
-                    SliderTextInputField(
-                        value = state.cfgScale,
-                        valueRange = (CFG_SCALE_RANGE_MIN * 1f)..(CFG_SCALE_RANGE_MAX * 1f),
-                        valueDiff = 0.5f,
-                        steps = abs(CFG_SCALE_RANGE_MAX - CFG_SCALE_RANGE_MIN) * 2 - 1,
-                        sliderColors = sliderColors,
-                        onValueChange = {
-                            processIntent(GenerationMviIntent.Update.CfgScale(it))
-                        },
-                    )
+                // CFG scale not available on open ai and google media pipe
+                when (state.mode) {
+                    ServerSource.OPEN_AI,
+                    ServerSource.LOCAL_GOOGLE_MEDIA_PIPE -> Unit
+                    else -> {
+                        Text(
+                            modifier = Modifier.padding(top = 8.dp),
+                            text = stringResource(
+                                LocalizationR.string.hint_cfg_scale,
+                                "${state.cfgScale.roundTo(2)}",
+                            ),
+                        )
+                        SliderTextInputField(
+                            value = state.cfgScale,
+                            valueRange = (CFG_SCALE_RANGE_MIN * 1f)..(CFG_SCALE_RANGE_MAX * 1f),
+                            valueDiff = 0.5f,
+                            steps = abs(CFG_SCALE_RANGE_MAX - CFG_SCALE_RANGE_MIN) * 2 - 1,
+                            sliderColors = sliderColors,
+                            onValueChange = {
+                                processIntent(GenerationMviIntent.Update.CfgScale(it))
+                            },
+                        )
+                    }
                 }
 
                 when (state.mode) {
@@ -548,9 +566,10 @@ fun GenerationInputForm(
                     else -> Unit
                 }
 
-                // Batch is not available for Local Diffusion
-                if (state.mode != ServerSource.LOCAL) {
-                    batchComponent()
+                // Batch is not available for any Local
+                when (state.mode) {
+                    ServerSource.LOCAL_GOOGLE_MEDIA_PIPE, ServerSource.LOCAL_MICROSOFT_ONNX -> Unit
+                    else -> batchComponent()
                 }
                 //Restore faces available only for A1111
                 if (state.mode == ServerSource.AUTOMATIC1111) {

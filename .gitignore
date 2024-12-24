@@ -44,6 +44,7 @@ captures/
 !/.idea/vcs.xml
 !/.idea/fileTemplates/
 !/.idea/inspectionProfiles/
+!/.idea/icon.svg
 !/.idea/scopes/
 !/.idea/codeStyleSettings.xml
 !/.idea/encodings.xml
@@ -135,3 +136,4 @@ jacoco.exec
 
 # Fastlane
 fastlane/report.xml
+.kotlin

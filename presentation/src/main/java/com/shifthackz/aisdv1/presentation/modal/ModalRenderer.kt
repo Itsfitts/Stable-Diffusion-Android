@@ -4,6 +4,7 @@ package com.shifthackz.aisdv1.presentation.modal
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,6 +35,7 @@ import com.shifthackz.aisdv1.presentation.screen.debug.DebugMenuIntent
 import com.shifthackz.aisdv1.presentation.screen.gallery.detail.GalleryDetailIntent
 import com.shifthackz.aisdv1.presentation.screen.gallery.list.GalleryIntent
 import com.shifthackz.aisdv1.presentation.screen.inpaint.InPaintIntent
+import com.shifthackz.aisdv1.presentation.screen.report.ReportIntent
 import com.shifthackz.aisdv1.presentation.screen.settings.SettingsIntent
 import com.shifthackz.aisdv1.presentation.screen.setup.ServerSetupIntent
 import com.shifthackz.aisdv1.presentation.widget.dialog.DecisionInteractiveDialog
@@ -60,6 +62,7 @@ fun ModalRenderer(
         processIntent(GalleryDetailIntent.DismissDialog)
         processIntent(InPaintIntent.ScreenModal.Dismiss)
         processIntent(DebugMenuIntent.DismissModal)
+        processIntent(ReportIntent.DismissError)
     }
     val context = LocalContext.current
     when (screenModal) {
@@ -112,6 +115,9 @@ fun ModalRenderer(
             onSaveRequest = {
                 processIntent(GenerationMviIntent.Result.Save(listOf(screenModal.result)))
             },
+            onReportRequest = {
+                processIntent(GenerationMviIntent.Result.Report(screenModal.result))
+            },
             onViewDetailRequest = {
                 processIntent(GenerationMviIntent.Result.View(screenModal.result))
             },
@@ -120,6 +126,7 @@ fun ModalRenderer(
         is Modal.Image.Batch -> ModalBottomSheet(
             onDismissRequest = dismiss,
             shape = RectangleShape,
+            containerColor = MaterialTheme.colorScheme.background,
         ) {
             GenerationImageBatchResultModal(
                 screenModal.results,
@@ -136,6 +143,7 @@ fun ModalRenderer(
         is Modal.PromptBottomSheet -> ModalBottomSheet(
             onDismissRequest = dismiss,
             shape = RectangleShape,
+            containerColor = MaterialTheme.colorScheme.background,
         ) {
             InputHistoryScreen(
                 onGenerationSelected = { ai ->
@@ -266,6 +274,7 @@ fun ModalRenderer(
         Modal.Language -> ModalBottomSheet(
             onDismissRequest = dismiss,
             shape = RectangleShape,
+            containerColor = MaterialTheme.colorScheme.background,
         ) {
             LanguageBottomSheet(onDismissRequest = dismiss)
         }
@@ -333,6 +342,7 @@ fun ModalRenderer(
         is Modal.GalleryGrid -> ModalBottomSheet(
             onDismissRequest = dismiss,
             shape = RectangleShape,
+            containerColor = MaterialTheme.colorScheme.background,
         ) {
             GridBottomSheet(
                 currentGrid = screenModal.grid,
@@ -346,6 +356,7 @@ fun ModalRenderer(
         is Modal.LDScheduler -> ModalBottomSheet(
             onDismissRequest = dismiss,
             shape = RectangleShape,
+            containerColor = MaterialTheme.colorScheme.background,
         ) {
             LDSchedulerBottomSheet(
                 currentScheduler = screenModal.scheduler,

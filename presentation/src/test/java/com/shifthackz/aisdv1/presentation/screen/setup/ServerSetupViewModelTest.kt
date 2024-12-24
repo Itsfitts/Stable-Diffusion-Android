@@ -1,5 +1,6 @@
 package com.shifthackz.aisdv1.presentation.screen.setup
 
+import com.shifthackz.aisdv1.core.common.appbuild.BuildInfoProvider
 import com.shifthackz.aisdv1.core.validation.common.CommonStringValidator
 import com.shifthackz.aisdv1.core.validation.path.FilePathValidator
 import com.shifthackz.aisdv1.core.validation.url.UrlValidator
@@ -11,7 +12,8 @@ import com.shifthackz.aisdv1.domain.interactor.wakelock.WakeLockInterActor
 import com.shifthackz.aisdv1.domain.preference.PreferenceManager
 import com.shifthackz.aisdv1.domain.usecase.downloadable.DeleteModelUseCase
 import com.shifthackz.aisdv1.domain.usecase.downloadable.DownloadModelUseCase
-import com.shifthackz.aisdv1.domain.usecase.downloadable.GetLocalAiModelsUseCase
+import com.shifthackz.aisdv1.domain.usecase.downloadable.GetLocalMediaPipeModelsUseCase
+import com.shifthackz.aisdv1.domain.usecase.downloadable.GetLocalOnnxModelsUseCase
 import com.shifthackz.aisdv1.domain.usecase.huggingface.FetchAndGetHuggingFaceModelsUseCase
 import com.shifthackz.aisdv1.domain.usecase.settings.GetConfigurationUseCase
 import com.shifthackz.aisdv1.presentation.core.CoreViewModelTest
@@ -21,14 +23,17 @@ import com.shifthackz.aisdv1.presentation.mocks.mockServerSetupStateLocalModel
 import com.shifthackz.aisdv1.presentation.model.LaunchSource
 import com.shifthackz.aisdv1.presentation.model.Modal
 import com.shifthackz.aisdv1.presentation.navigation.router.main.MainRouter
+import com.shifthackz.aisdv1.presentation.stub.stubDispatchersProvider
 import com.shifthackz.aisdv1.presentation.stub.stubSchedulersProvider
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.unmockkAll
 import io.mockk.verify
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
@@ -36,7 +41,8 @@ import org.junit.Test
 class ServerSetupViewModelTest : CoreViewModelTest<ServerSetupViewModel>() {
 
     private val stubGetConfigurationUseCase = mockk<GetConfigurationUseCase>()
-    private val stubGetLocalAiModelsUseCase = mockk<GetLocalAiModelsUseCase>()
+    private val stubGetLocalOnnxModelsUseCase = mockk<GetLocalOnnxModelsUseCase>()
+    private val stubGetLocalMediaPipeModelsUseCase = mockk<GetLocalMediaPipeModelsUseCase>()
     private val stubFetchAndGetHuggingFaceModelsUseCase = mockk<FetchAndGetHuggingFaceModelsUseCase>()
     private val stubUrlValidator = mockk<UrlValidator>()
     private val stubCommonStringValidator = mockk<CommonStringValidator>()
@@ -50,8 +56,10 @@ class ServerSetupViewModelTest : CoreViewModelTest<ServerSetupViewModel>() {
 
     override fun initializeViewModel() = ServerSetupViewModel(
         launchSource = LaunchSource.SETTINGS,
+        dispatchersProvider = stubDispatchersProvider,
         getConfigurationUseCase = stubGetConfigurationUseCase,
-        getLocalAiModelsUseCase = stubGetLocalAiModelsUseCase,
+        getLocalOnnxModelsUseCase = stubGetLocalOnnxModelsUseCase,
+        getLocalMediaPipeModelsUseCase = stubGetLocalMediaPipeModelsUseCase,
         fetchAndGetHuggingFaceModelsUseCase = stubFetchAndGetHuggingFaceModelsUseCase,
         urlValidator = stubUrlValidator,
         stringValidator = stubCommonStringValidator,
@@ -63,6 +71,7 @@ class ServerSetupViewModelTest : CoreViewModelTest<ServerSetupViewModel>() {
         preferenceManager = stubPreferenceManager,
         wakeLockInterActor = stubWakeLockInterActor,
         mainRouter = stubMainRouter,
+        buildInfoProvider = BuildInfoProvider.stub,
     )
 
     @Before
@@ -74,25 +83,36 @@ class ServerSetupViewModelTest : CoreViewModelTest<ServerSetupViewModel>() {
         } returns Single.just(Configuration(serverUrl = "https://5598.is.my.favorite.com"))
 
         every {
-            stubGetLocalAiModelsUseCase()
+            stubGetLocalOnnxModelsUseCase()
         } returns Single.just(mockLocalAiModels)
+
+        every {
+            stubGetLocalMediaPipeModelsUseCase()
+        } returns Single.just(emptyList())
 
         every {
             stubFetchAndGetHuggingFaceModelsUseCase()
         } returns Single.just(mockHuggingFaceModels)
     }
 
+    @After
+    override fun finalize() {
+        super.finalize()
+        unmockkAll()
+    }
+
     @Test
     fun `initialized, expected UI state updated with correct stub values`() {
         val state = viewModel.state.value
         Assert.assertEquals(true, state.huggingFaceModels.isNotEmpty())
-        Assert.assertEquals(true, state.localModels.isNotEmpty())
+        Assert.assertEquals(true, state.localOnnxModels.isNotEmpty())
         Assert.assertEquals("https://5598.is.my.favorite.com", state.serverUrl)
         Assert.assertEquals(ServerSetupState.AuthType.ANONYMOUS, state.authType)
     }
 
     @Test
     fun `given received AllowLocalCustomModel intent, expected Custom local model selected in UI state`() {
+        viewModel.processIntent(ServerSetupIntent.UpdateServerMode(ServerSource.LOCAL_MICROSOFT_ONNX))
         viewModel.processIntent(ServerSetupIntent.AllowLocalCustomModel(true))
         val state = viewModel.state.value
         val expectedLocalModels = listOf(
@@ -111,8 +131,8 @@ class ServerSetupViewModelTest : CoreViewModelTest<ServerSetupViewModel>() {
                 selected = false,
             )
         )
-        Assert.assertEquals(true, state.localCustomModel)
-        Assert.assertEquals(expectedLocalModels, state.localModels)
+        Assert.assertEquals(true, state.localOnnxCustomModel)
+        Assert.assertEquals(expectedLocalModels, state.localOnnxModels)
     }
 
     @Test
@@ -137,6 +157,7 @@ class ServerSetupViewModelTest : CoreViewModelTest<ServerSetupViewModel>() {
             stubWakeLockInterActor.releaseWakeLockUseCase()
         } returns Result.success(Unit)
 
+        viewModel.processIntent(ServerSetupIntent.UpdateServerMode(ServerSource.LOCAL_MICROSOFT_ONNX))
         val localModel = mockServerSetupStateLocalModel.copy(
             downloadState = DownloadState.Unknown,
         )
@@ -189,7 +210,7 @@ class ServerSetupViewModelTest : CoreViewModelTest<ServerSetupViewModel>() {
 
         val state = viewModel.state.value
         val expected = false
-        val actual = state.localModels.any {
+        val actual = state.localOnnxModels.any {
             it.downloadState == DownloadState.Downloading(22)
         }
         Assert.assertEquals(expected, actual)
@@ -211,7 +232,7 @@ class ServerSetupViewModelTest : CoreViewModelTest<ServerSetupViewModel>() {
         runTest {
             val state = viewModel.state.value
             Assert.assertEquals(Modal.None, state.screenModal)
-            Assert.assertEquals(false, state.localModels.find { it.id == "1" }!!.downloaded)
+            Assert.assertEquals(false, state.localOnnxModels.find { it.id == "1" }!!.downloaded)
         }
         verify {
             stubDeleteModelUseCase("1")
@@ -220,9 +241,10 @@ class ServerSetupViewModelTest : CoreViewModelTest<ServerSetupViewModel>() {
 
     @Test
     fun `given received SelectLocalModel intent, expected passed LocalModel is selected in UI state`() {
+        viewModel.processIntent(ServerSetupIntent.UpdateServerMode(ServerSource.LOCAL_MICROSOFT_ONNX))
         viewModel.processIntent(ServerSetupIntent.SelectLocalModel(mockServerSetupStateLocalModel))
         val state = viewModel.state.value
-        Assert.assertEquals(true, state.localModels.find { it.id == "1" }!!.selected)
+        Assert.assertEquals(true, state.localOnnxModels.find { it.id == "1" }!!.selected)
     }
 
     @Test
@@ -307,8 +329,8 @@ class ServerSetupViewModelTest : CoreViewModelTest<ServerSetupViewModel>() {
 
     @Test
     fun `given received UpdateServerMode intent, expected mode field in UI state is LOCAL`() {
-        viewModel.processIntent(ServerSetupIntent.UpdateServerMode(ServerSource.LOCAL))
-        val expected = ServerSource.LOCAL
+        viewModel.processIntent(ServerSetupIntent.UpdateServerMode(ServerSource.LOCAL_MICROSOFT_ONNX))
+        val expected = ServerSource.LOCAL_MICROSOFT_ONNX
         val actual = viewModel.state.value.mode
         Assert.assertEquals(expected, actual)
     }

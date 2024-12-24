@@ -10,8 +10,10 @@ import com.shifthackz.aisdv1.data.repository.HuggingFaceGenerationRepositoryImpl
 import com.shifthackz.aisdv1.data.repository.HuggingFaceModelsRepositoryImpl
 import com.shifthackz.aisdv1.data.repository.LocalDiffusionGenerationRepositoryImpl
 import com.shifthackz.aisdv1.data.repository.LorasRepositoryImpl
+import com.shifthackz.aisdv1.data.repository.MediaPipeGenerationRepositoryImpl
 import com.shifthackz.aisdv1.data.repository.OpenAiGenerationRepositoryImpl
 import com.shifthackz.aisdv1.data.repository.RandomImageRepositoryImpl
+import com.shifthackz.aisdv1.data.repository.ReportRepositoryImpl
 import com.shifthackz.aisdv1.data.repository.ServerConfigurationRepositoryImpl
 import com.shifthackz.aisdv1.data.repository.StabilityAiCreditsRepositoryImpl
 import com.shifthackz.aisdv1.data.repository.StabilityAiEnginesRepositoryImpl
@@ -33,8 +35,10 @@ import com.shifthackz.aisdv1.domain.repository.HuggingFaceGenerationRepository
 import com.shifthackz.aisdv1.domain.repository.HuggingFaceModelsRepository
 import com.shifthackz.aisdv1.domain.repository.LocalDiffusionGenerationRepository
 import com.shifthackz.aisdv1.domain.repository.LorasRepository
+import com.shifthackz.aisdv1.domain.repository.MediaPipeGenerationRepository
 import com.shifthackz.aisdv1.domain.repository.OpenAiGenerationRepository
 import com.shifthackz.aisdv1.domain.repository.RandomImageRepository
+import com.shifthackz.aisdv1.domain.repository.ReportRepository
 import com.shifthackz.aisdv1.domain.repository.ServerConfigurationRepository
 import com.shifthackz.aisdv1.domain.repository.StabilityAiCreditsRepository
 import com.shifthackz.aisdv1.domain.repository.StabilityAiEnginesRepository
@@ -63,6 +67,7 @@ val repositoryModule = module {
 
     singleOf(::TemporaryGenerationResultRepositoryImpl) bind TemporaryGenerationResultRepository::class
     factoryOf(::LocalDiffusionGenerationRepositoryImpl) bind LocalDiffusionGenerationRepository::class
+    factoryOf(::MediaPipeGenerationRepositoryImpl) bind MediaPipeGenerationRepository::class
     factoryOf(::HordeGenerationRepositoryImpl) bind HordeGenerationRepository::class
     factoryOf(::HuggingFaceGenerationRepositoryImpl) bind HuggingFaceGenerationRepository::class
     factoryOf(::OpenAiGenerationRepositoryImpl) bind OpenAiGenerationRepository::class
@@ -83,4 +88,5 @@ val repositoryModule = module {
     factoryOf(::DownloadableModelRepositoryImpl) bind DownloadableModelRepository::class
     factoryOf(::HuggingFaceModelsRepositoryImpl) bind HuggingFaceModelsRepository::class
     factoryOf(::SupportersRepositoryImpl) bind SupportersRepository::class
+    factoryOf(::ReportRepositoryImpl) bind ReportRepository::class
 }

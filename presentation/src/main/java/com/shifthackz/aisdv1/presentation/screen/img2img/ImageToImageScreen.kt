@@ -2,6 +2,9 @@
 
 package com.shifthackz.aisdv1.presentation.screen.img2img
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -52,9 +56,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import com.shifthackz.aisdv1.core.common.file.FileProviderDescriptor
 import com.shifthackz.aisdv1.core.common.math.roundTo
-import com.shifthackz.aisdv1.core.ui.MviComponent
+import com.shifthackz.aisdv1.core.model.UiText
+import com.shifthackz.aisdv1.core.model.asString
+import com.shifthackz.aisdv1.core.model.asUiText
+import com.shifthackz.android.core.mvi.MviComponent
 import com.shifthackz.aisdv1.domain.entity.AiGenerationResult
 import com.shifthackz.aisdv1.domain.entity.ServerSource
 import com.shifthackz.aisdv1.presentation.core.GenerationMviIntent
@@ -66,13 +74,14 @@ import com.shifthackz.aisdv1.presentation.screen.inpaint.components.InPaintCompo
 import com.shifthackz.aisdv1.presentation.theme.sliderColors
 import com.shifthackz.aisdv1.presentation.utils.Constants.DENOISING_STRENGTH_MAX
 import com.shifthackz.aisdv1.presentation.utils.Constants.DENOISING_STRENGTH_MIN
+import com.shifthackz.aisdv1.presentation.utils.PermissionUtil
+import com.shifthackz.aisdv1.presentation.utils.uriToBitmap
 import com.shifthackz.aisdv1.presentation.widget.input.GenerationInputForm
 import com.shifthackz.aisdv1.presentation.widget.toolbar.GenerationBottomToolbar
 import com.shifthackz.aisdv1.presentation.widget.work.BackgroundWorkWidget
-import com.shz.imagepicker.imagepicker.ImagePicker
-import com.shz.imagepicker.imagepicker.model.GalleryPicker
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
+import java.io.File
 import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 
 @Composable
@@ -80,21 +89,59 @@ fun ImageToImageScreen() {
     val context = LocalContext.current
     val viewModel = koinViewModel<ImageToImageViewModel>()
     val fileProviderDescriptor: FileProviderDescriptor = koinInject()
+
+    val cameraFile = File(context.cacheDir, "camera.jpg").apply {
+        createNewFile()
+        deleteOnExit()
+    }
+
+    val cameraUri = FileProvider.getUriForFile(
+        context,
+        fileProviderDescriptor.providerPath,
+        cameraFile,
+    )
+
+    val cameraPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture(),
+    ) { success ->
+        if (!success) return@rememberLauncherForActivityResult
+        val bitmap = uriToBitmap(context, cameraUri) ?: return@rememberLauncherForActivityResult
+        viewModel.processIntent(ImageToImageIntent.CropImage(bitmap))
+    }
+
+    val cameraPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) return@rememberLauncherForActivityResult
+        cameraPicker.launch(cameraUri)
+    }
+
+    val mediaPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        val bitmap =
+            uri?.let { uriToBitmap(context, it) } ?: return@rememberLauncherForActivityResult
+        viewModel.processIntent(ImageToImageIntent.CropImage(bitmap))
+    }
+
     MviComponent(
         viewModel = viewModel,
         processEffect = { effect ->
-            ImagePicker.Builder(fileProviderDescriptor.providerPath) { result ->
-                viewModel.processIntent(ImageToImageIntent.CropImage(result))
+            when (effect) {
+                ImageToImageEffect.GalleryPicker -> {
+                    val request = PickVisualMediaRequest(
+                        ActivityResultContracts.PickVisualMedia.ImageOnly,
+                    )
+                    mediaPicker.launch(request)
+                }
+
+                ImageToImageEffect.CameraPicker -> {
+                    if (PermissionUtil.checkCameraPermission(context, cameraPermission::launch)) {
+                        cameraPicker.launch(cameraUri)
+                    }
+                }
             }
-                .useGallery(effect == ImageToImageEffect.GalleryPicker)
-                .useCamera(effect == ImageToImageEffect.CameraPicker)
-                .autoRotate(effect == ImageToImageEffect.GalleryPicker)
-                .multipleSelection(false)
-                .galleryPicker(GalleryPicker.NATIVE)
-                .build()
-                .launch(context)
         },
-        applySystemUiColors = false,
     ) { state, intentHandler ->
         ScreenContent(
             modifier = Modifier.fillMaxSize(),
@@ -108,7 +155,7 @@ fun ImageToImageScreen() {
 private fun ScreenContent(
     modifier: Modifier = Modifier,
     state: ImageToImageState,
-    processIntent: (GenerationMviIntent) -> Unit = {}
+    processIntent: (GenerationMviIntent) -> Unit = {},
 ) {
     val promptChipTextFieldState = remember { mutableStateOf(TextFieldValue()) }
     val negativePromptChipTextFieldState = remember { mutableStateOf(TextFieldValue()) }
@@ -135,7 +182,7 @@ private fun ScreenContent(
                             )
                         },
                         actions = {
-                            if (state.mode != ServerSource.LOCAL) {
+                            if (state.mode != ServerSource.LOCAL_MICROSOFT_ONNX) {
                                 IconButton(
                                     onClick = {
                                         processIntent(
@@ -154,6 +201,7 @@ private fun ScreenContent(
                                 }
                             }
                         },
+                        windowInsets = WindowInsets(0, 0, 0, 0),
                     )
                     BackgroundWorkWidget(
                         modifier = Modifier
@@ -233,17 +281,33 @@ private fun ScreenContent(
                             )
                             Text(
                                 modifier = Modifier.padding(top = 14.dp),
-                                text = stringResource(
-                                    if (state.mode == ServerSource.LOCAL) LocalizationR.string.local_no_img2img_support_sub_title
-                                    else LocalizationR.string.dalle_no_img2img_support_sub_title
-                                ),
+                                text = when (state.mode) {
+                                    ServerSource.OPEN_AI -> LocalizationR.string
+                                        .dalle_no_img2img_support_sub_title
+                                        .asUiText()
+
+                                    ServerSource.LOCAL_MICROSOFT_ONNX,
+                                    ServerSource.LOCAL_GOOGLE_MEDIA_PIPE -> LocalizationR.string
+                                        .local_no_img2img_support_sub_title
+                                        .asUiText()
+
+                                    else -> UiText.empty
+                                }.asString(),
                             )
                             Text(
                                 modifier = Modifier.padding(top = 14.dp),
-                                text = stringResource(
-                                    if (state.mode == ServerSource.LOCAL) LocalizationR.string.local_no_img2img_support_sub_title_2
-                                    else LocalizationR.string.dalle_no_img2img_support_sub_title_2
-                                ),
+                                text = when (state.mode) {
+                                    ServerSource.OPEN_AI -> LocalizationR.string
+                                        .dalle_no_img2img_support_sub_title_2
+                                        .asUiText()
+
+                                    ServerSource.LOCAL_MICROSOFT_ONNX,
+                                    ServerSource.LOCAL_GOOGLE_MEDIA_PIPE -> LocalizationR.string
+                                        .local_no_img2img_support_sub_title_2
+                                        .asUiText()
+
+                                    else -> UiText.empty
+                                }.asString(),
                             )
                         }
                     }
@@ -251,7 +315,8 @@ private fun ScreenContent(
             },
             bottomBar = {
                 val isEnabled = when (state.mode) {
-                    ServerSource.LOCAL,
+                    ServerSource.LOCAL_MICROSOFT_ONNX,
+                    ServerSource.LOCAL_GOOGLE_MEDIA_PIPE,
                     ServerSource.OPEN_AI -> true
 
                     else -> !state.hasValidationErrors && !state.imageState.isEmpty
@@ -271,20 +336,28 @@ private fun ScreenContent(
                             keyboardController?.hide()
                             when (state.mode) {
                                 ServerSource.OPEN_AI,
-                                ServerSource.LOCAL -> processIntent(GenerationMviIntent.Configuration)
+                                ServerSource.LOCAL_GOOGLE_MEDIA_PIPE,
+                                ServerSource.LOCAL_MICROSOFT_ONNX -> processIntent(
+                                    GenerationMviIntent.Configuration
+                                )
 
                                 else -> {
                                     promptChipTextFieldState.value.text.takeIf(String::isNotBlank)
                                         ?.let { "${state.prompt}, ${it.trim()}" }
                                         ?.let(GenerationMviIntent.Update::Prompt)
                                         ?.let(processIntent::invoke)
-                                        ?.also { promptChipTextFieldState.value = TextFieldValue("") }
+                                        ?.also {
+                                            promptChipTextFieldState.value = TextFieldValue("")
+                                        }
 
                                     negativePromptChipTextFieldState.value.text.takeIf(String::isNotBlank)
                                         ?.let { "${state.negativePrompt}, ${it.trim()}" }
                                         ?.let(GenerationMviIntent.Update::NegativePrompt)
                                         ?.let(processIntent::invoke)
-                                        ?.also { negativePromptChipTextFieldState.value = TextFieldValue("") }
+                                        ?.also {
+                                            negativePromptChipTextFieldState.value =
+                                                TextFieldValue("")
+                                        }
 
                                     processIntent(GenerationMviIntent.Generate)
                                 }
@@ -292,8 +365,11 @@ private fun ScreenContent(
                         },
                         enabled = isEnabled,
                     ) {
-                        if (state.mode != ServerSource.LOCAL) {
-                            Icon(
+                        when (state.mode) {
+                            ServerSource.LOCAL_MICROSOFT_ONNX,
+                            ServerSource.LOCAL_GOOGLE_MEDIA_PIPE -> Unit
+
+                            else -> Icon(
                                 modifier = Modifier.size(18.dp),
                                 imageVector = Icons.Default.AutoFixNormal,
                                 contentDescription = "Imagine",
@@ -303,11 +379,12 @@ private fun ScreenContent(
                             modifier = Modifier.padding(start = 8.dp),
                             text = stringResource(
                                 id = when (state.mode) {
-                                    ServerSource.LOCAL,
+                                    ServerSource.LOCAL_MICROSOFT_ONNX,
+                                    ServerSource.LOCAL_GOOGLE_MEDIA_PIPE,
                                     ServerSource.OPEN_AI -> LocalizationR.string.action_change_configuration
 
                                     else -> LocalizationR.string.action_generate
-                                }
+                                },
                             ),
                             color = LocalContentColor.current,
                         )
@@ -466,7 +543,7 @@ private fun ImagePickButtonBox(
                 id = when (buttonType) {
                     ImagePickButton.PHOTO -> LocalizationR.string.action_image_picker_gallery
                     ImagePickButton.CAMERA -> LocalizationR.string.action_image_picker_camera
-                }
+                },
             ),
             fontSize = 17.sp,
         )

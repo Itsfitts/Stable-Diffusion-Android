@@ -2,6 +2,7 @@ package com.shifthackz.aisdv1.network.di
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.Strictness
 import com.shifthackz.aisdv1.network.api.automatic1111.Automatic1111RestApi
 import com.shifthackz.aisdv1.network.api.horde.HordeRestApi
 import com.shifthackz.aisdv1.network.api.huggingface.HuggingFaceApi
@@ -14,6 +15,7 @@ import com.shifthackz.aisdv1.network.api.sdai.DonateApi
 import com.shifthackz.aisdv1.network.api.sdai.DownloadableModelsApi
 import com.shifthackz.aisdv1.network.api.sdai.DownloadableModelsApiImpl
 import com.shifthackz.aisdv1.network.api.sdai.HuggingFaceModelsApi
+import com.shifthackz.aisdv1.network.api.sdai.ReportApi
 import com.shifthackz.aisdv1.network.api.stabilityai.StabilityAiApi
 import com.shifthackz.aisdv1.network.api.swarmui.SwarmUiApi
 import com.shifthackz.aisdv1.network.api.swarmui.SwarmUiApiImpl
@@ -43,7 +45,11 @@ private const val HTTP_TIMEOUT = 10L
 
 val networkModule = module {
 
-    single<Gson> { GsonBuilder().setLenient().create() }
+    single<Gson> {
+        GsonBuilder()
+            .setStrictness(Strictness.LENIENT)
+            .create()
+    }
 
     single { RestAuthenticator(get()) }
 
@@ -136,6 +142,12 @@ val networkModule = module {
         get<Retrofit.Builder>()
             .withBaseUrl(get<ApiUrlProvider>().stableDiffusionAppApiUrl)
             .create(DonateApi::class.java)
+    }
+
+    single {
+        get<Retrofit.Builder>()
+            .withBaseUrl(get<ApiUrlProvider>().stableDiffusionReportApiUrl)
+            .create(ReportApi::class.java)
     }
 
     single {

@@ -1,6 +1,7 @@
 package com.shifthackz.aisdv1.presentation.screen.img2img
 
 import com.shifthackz.aisdv1.core.common.log.errorLog
+import com.shifthackz.aisdv1.core.common.schedulers.DispatchersProvider
 import com.shifthackz.aisdv1.core.common.schedulers.SchedulersProvider
 import com.shifthackz.aisdv1.core.common.schedulers.subscribeOnMainThread
 import com.shifthackz.aisdv1.core.imageprocessing.Base64ToBitmapConverter
@@ -31,13 +32,13 @@ import com.shifthackz.aisdv1.presentation.model.Modal
 import com.shifthackz.aisdv1.presentation.navigation.router.drawer.DrawerRouter
 import com.shifthackz.aisdv1.presentation.navigation.router.main.MainRouter
 import com.shifthackz.aisdv1.presentation.screen.inpaint.InPaintStateProducer
-import com.shz.imagepicker.imagepicker.model.PickedResult
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.kotlin.subscribeBy
 import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 
 class ImageToImageViewModel(
+    dispatchersProvider: DispatchersProvider,
     generationFormUpdateEvent: GenerationFormUpdateEvent,
     getStableDiffusionSamplersUseCase: GetStableDiffusionSamplersUseCase,
     observeHordeProcessStatusUseCase: ObserveHordeProcessStatusUseCase,
@@ -75,6 +76,8 @@ class ImageToImageViewModel(
 ) {
 
     override val initialState = ImageToImageState()
+
+    override val effectDispatcher = dispatchersProvider.immediate
 
     init {
         !generationFormUpdateEvent
@@ -137,12 +140,8 @@ class ImageToImageViewModel(
 
             ImageToImageIntent.Pick.Gallery -> emitEffect(ImageToImageEffect.GalleryPicker)
 
-            is ImageToImageIntent.CropImage -> when (intent.result) {
-                is PickedResult.Single -> updateState {
-                    it.copy(screenModal = Modal.Image.Crop(intent.result.image.bitmap))
-                }
-
-                else -> Unit
+            is ImageToImageIntent.CropImage -> updateState {
+                it.copy(screenModal = Modal.Image.Crop(intent.bitmap))
             }
 
             is ImageToImageIntent.UpdateImage -> updateState {

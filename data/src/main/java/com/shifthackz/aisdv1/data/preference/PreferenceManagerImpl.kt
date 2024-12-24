@@ -13,257 +13,218 @@ import com.shifthackz.aisdv1.domain.entity.HuggingFaceModel
 import com.shifthackz.aisdv1.domain.entity.ServerSource
 import com.shifthackz.aisdv1.domain.entity.Settings
 import com.shifthackz.aisdv1.domain.preference.PreferenceManager
+import com.shifthackz.android.core.preferences.delegates
 import io.reactivex.rxjava3.core.BackpressureStrategy
+import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 
 class PreferenceManagerImpl(
-    private val preferences: SharedPreferences,
+    preferences: SharedPreferences,
 ) : PreferenceManager {
 
-    private val preferencesChangedSubject: BehaviorSubject<Unit> =
+    private val preferencesChangedSubject: BehaviorSubject<Any> =
         BehaviorSubject.createDefault(Unit)
 
-    override var automatic1111ServerUrl: String
-        get() = (preferences.getString(KEY_SERVER_URL, "") ?: "").fixUrlSlashes()
-        set(value) = preferences.edit()
-            .putString(KEY_SERVER_URL, value.fixUrlSlashes())
-            .apply()
-            .also { onPreferencesChanged() }
+    override var automatic1111ServerUrl: String by preferences.delegates.complexString(
+        key = KEY_SERVER_URL,
+        default = "",
+        serialize = { it.fixUrlSlashes() },
+        deserialize = { it.fixUrlSlashes() },
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var swarmUiServerUrl: String
-        get() = (preferences.getString(KEY_SWARM_SERVER_URL, "") ?: "").fixUrlSlashes()
-        set(value) = preferences.edit()
-            .putString(KEY_SWARM_SERVER_URL, value.fixUrlSlashes())
-            .apply()
-            .also { onPreferencesChanged() }
+    override var swarmUiServerUrl: String by preferences.delegates.complexString(
+        key = KEY_SWARM_SERVER_URL,
+        default = "",
+        serialize = { it.fixUrlSlashes() },
+        deserialize = { it.fixUrlSlashes() },
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var swarmUiModel: String
-        get() = preferences.getString(KEY_SWARM_MODEL, "") ?: ""
-        set(value) = preferences
-            .edit()
-            .putString(KEY_SWARM_MODEL, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var swarmUiModel: String by preferences.delegates.string(
+        key = KEY_SWARM_MODEL,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var demoMode: Boolean
-        get() = preferences.getBoolean(KEY_DEMO_MODE, false)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_DEMO_MODE, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var demoMode: Boolean by preferences.delegates.boolean(
+        key = KEY_DEMO_MODE,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var developerMode: Boolean
-        get() = preferences.getBoolean(KEY_DEVELOPER_MODE, false)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_DEVELOPER_MODE, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var developerMode: Boolean by preferences.delegates.boolean(
+        key = KEY_DEVELOPER_MODE,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var localDiffusionCustomModelPath: String
-        get() = preferences.getString(
-            KEY_LOCAL_DIFFUSION_CUSTOM_MODEL_PATH,
-            LOCAL_DIFFUSION_CUSTOM_PATH,
-        ) ?: LOCAL_DIFFUSION_CUSTOM_PATH
-        set(value) = preferences.edit()
-            .putString(KEY_LOCAL_DIFFUSION_CUSTOM_MODEL_PATH, value)
-            .apply()
+    override var localMediaPipeCustomModelPath: String by preferences.delegates.string(
+        key = KEY_MEDIA_PIPE_CUSTOM_MODEL_PATH,
+        default = LOCAL_DIFFUSION_CUSTOM_PATH,
+    )
 
-    override var localDiffusionAllowCancel: Boolean
-        get() = preferences.getBoolean(KEY_ALLOW_LOCAL_DIFFUSION_CANCEL, false)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_ALLOW_LOCAL_DIFFUSION_CANCEL, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var localOnnxCustomModelPath: String by preferences.delegates.string(
+        key = KEY_LOCAL_DIFFUSION_CUSTOM_MODEL_PATH,
+        default = LOCAL_DIFFUSION_CUSTOM_PATH,
+    )
 
-    override var localDiffusionSchedulerThread: SchedulersToken
-        get() = preferences
-            .getInt(KEY_LOCAL_DIFFUSION_SCHEDULER_THREAD, SchedulersToken.COMPUTATION.ordinal)
-            .let { SchedulersToken.entries[it] }
-        set(value) = preferences.edit()
-            .putInt(KEY_LOCAL_DIFFUSION_SCHEDULER_THREAD, value.ordinal)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var localOnnxAllowCancel: Boolean by preferences.delegates.boolean(
+        key = KEY_ALLOW_LOCAL_DIFFUSION_CANCEL,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var monitorConnectivity: Boolean
-        get() = if (!source.featureTags.contains(FeatureTag.OwnServer)) false
-        else preferences.getBoolean(KEY_MONITOR_CONNECTIVITY, true)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_MONITOR_CONNECTIVITY, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var localOnnxSchedulerThread: SchedulersToken by preferences.delegates.complexInt(
+        key = KEY_LOCAL_DIFFUSION_SCHEDULER_THREAD,
+        default = SchedulersToken.COMPUTATION,
+        serialize = { token -> token.ordinal },
+        deserialize = { index -> SchedulersToken.entries[index] },
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var autoSaveAiResults: Boolean
-        get() = preferences.getBoolean(KEY_AI_AUTO_SAVE, true)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_AI_AUTO_SAVE, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var monitorConnectivity: Boolean by preferences.delegates.complexBoolean(
+        key = KEY_MONITOR_CONNECTIVITY,
+        default = false,
+        serialize = { it },
+        deserialize = { if (!source.featureTags.contains(FeatureTag.OwnServer)) false else it },
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var saveToMediaStore: Boolean
-        get() = preferences.getBoolean(KEY_SAVE_TO_MEDIA_STORE, shouldUseNewMediaStore())
-        set(value) = preferences.edit()
-            .putBoolean(KEY_SAVE_TO_MEDIA_STORE, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var autoSaveAiResults: Boolean by preferences.delegates.boolean(
+        key = KEY_AI_AUTO_SAVE,
+        default = true,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var formAdvancedOptionsAlwaysShow: Boolean
-        get() = preferences.getBoolean(KEY_FORM_ALWAYS_SHOW_ADVANCED_OPTIONS, false)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_FORM_ALWAYS_SHOW_ADVANCED_OPTIONS, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var saveToMediaStore: Boolean by preferences.delegates.boolean(
+        key = KEY_SAVE_TO_MEDIA_STORE,
+        default = shouldUseNewMediaStore(),
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var formPromptTaggedInput: Boolean
-        get() = preferences.getBoolean(KEY_FORM_PROMPT_TAGGED_INPUT, true)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_FORM_PROMPT_TAGGED_INPUT, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var formAdvancedOptionsAlwaysShow: Boolean by preferences.delegates.boolean(
+        key = KEY_FORM_ALWAYS_SHOW_ADVANCED_OPTIONS,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var source: ServerSource
-        get() = (preferences.getString(KEY_SERVER_SOURCE, ServerSource.AUTOMATIC1111.key) ?: ServerSource.AUTOMATIC1111.key)
-            .let(ServerSource.Companion::parse)
-        set(value) = preferences.edit()
-            .putString(KEY_SERVER_SOURCE, value.key)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var formPromptTaggedInput: Boolean by preferences.delegates.boolean(
+        key = KEY_FORM_PROMPT_TAGGED_INPUT,
+        default = false,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var sdModel: String
-        get() = preferences.getString(KEY_SD_MODEL, "") ?: ""
-        set(value) = preferences.edit()
-            .putString(KEY_SD_MODEL, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var source: ServerSource by preferences.delegates.complexString(
+        key = KEY_SERVER_SOURCE,
+        default = ServerSource.AUTOMATIC1111,
+        serialize = { source -> source.key },
+        deserialize = { key -> ServerSource.parse(key) },
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var hordeApiKey: String
-        get() = preferences.getString(KEY_HORDE_API_KEY, "") ?: ""
-        set(value) = preferences.edit()
-            .putString(KEY_HORDE_API_KEY, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var sdModel: String by preferences.delegates.string(
+        key = KEY_SD_MODEL,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var openAiApiKey: String
-        get() = preferences.getString(KEY_OPEN_AI_API_KEY, "") ?: ""
-        set(value) = preferences.edit()
-            .putString(KEY_OPEN_AI_API_KEY, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var hordeApiKey: String by preferences.delegates.string(
+        key = KEY_HORDE_API_KEY,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var huggingFaceApiKey: String
-        get() = preferences.getString(KEY_HUGGING_FACE_API_KEY, "") ?: ""
-        set(value) = preferences.edit()
-            .putString(KEY_HUGGING_FACE_API_KEY, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var openAiApiKey: String by preferences.delegates.string(
+        key = KEY_OPEN_AI_API_KEY,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var huggingFaceModel: String
-        get() {
-            return preferences.getString(
-                KEY_HUGGING_FACE_MODEL_KEY,
-                HuggingFaceModel.default.alias,
-            ) ?: HuggingFaceModel.default.alias
-        }
-        set(value) = preferences.edit()
-            .putString(KEY_HUGGING_FACE_MODEL_KEY, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var huggingFaceApiKey: String by preferences.delegates.string(
+        key = KEY_HUGGING_FACE_API_KEY,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var stabilityAiApiKey: String
-        get() = preferences.getString(KEY_STABILITY_AI_API_KEY, "") ?: ""
-        set(value) = preferences.edit()
-            .putString(KEY_STABILITY_AI_API_KEY, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var huggingFaceModel: String by preferences.delegates.string(
+        key = KEY_HUGGING_FACE_MODEL_KEY,
+        default = HuggingFaceModel.default.alias,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var stabilityAiEngineId: String
-        get() = preferences.getString(KEY_STABILITY_AI_ENGINE_ID_KEY, "") ?: ""
-        set(value) = preferences.edit()
-            .putString(KEY_STABILITY_AI_ENGINE_ID_KEY, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var stabilityAiApiKey: String by preferences.delegates.string(
+        key = KEY_STABILITY_AI_API_KEY,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var onBoardingComplete: Boolean
-        get() = preferences.getBoolean(KEY_ON_BOARDING_COMPLETE, false)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_ON_BOARDING_COMPLETE, value)
-            .apply()
+    override var stabilityAiEngineId: String by preferences.delegates.string(
+        key = KEY_STABILITY_AI_ENGINE_ID_KEY,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var forceSetupAfterUpdate: Boolean
-        get() = preferences.getBoolean(KEY_FORCE_SETUP_AFTER_UPDATE, true)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_FORCE_SETUP_AFTER_UPDATE, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var onBoardingComplete: Boolean by preferences.delegates.boolean(
+        key = KEY_ON_BOARDING_COMPLETE,
+    )
 
-    override var localModelId: String
-        get() = preferences.getString(KEY_LOCAL_MODEL_ID, "") ?: ""
-        set(value) = preferences.edit()
-            .putString(KEY_LOCAL_MODEL_ID, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var forceSetupAfterUpdate: Boolean by preferences.delegates.boolean(
+        key = KEY_FORCE_SETUP_AFTER_UPDATE,
+        default = true,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var localUseNNAPI: Boolean
-        get() = preferences.getBoolean(KEY_LOCAL_NN_API, false)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_LOCAL_NN_API, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var localOnnxModelId: String by preferences.delegates.string(
+        key = KEY_LOCAL_MODEL_ID,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var designUseSystemColorPalette: Boolean
-        get() = preferences.getBoolean(KEY_DESIGN_DYNAMIC_COLORS, false)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_DESIGN_DYNAMIC_COLORS, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var localOnnxUseNNAPI: Boolean by preferences.delegates.boolean(
+        key = KEY_LOCAL_NN_API,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var designUseSystemDarkTheme: Boolean
-        get() = preferences.getBoolean(KEY_DESIGN_SYSTEM_DARK_THEME, true)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_DESIGN_SYSTEM_DARK_THEME, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var localMediaPipeModelId: String by preferences.delegates.string(
+        key = KEY_MEDIA_PIPE_MODEL_ID,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var designDarkTheme: Boolean
-        get() = preferences.getBoolean(KEY_DESIGN_DARK_THEME, true)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_DESIGN_DARK_THEME, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var designUseSystemColorPalette: Boolean by preferences.delegates.boolean(
+        key = KEY_DESIGN_DYNAMIC_COLORS,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var designColorToken: String
-        get() = preferences.getString(KEY_DESIGN_COLOR_TOKEN, "${ColorToken.MAUVE}") ?: "${ColorToken.MAUVE}"
-        set(value) = preferences.edit()
-            .putString(KEY_DESIGN_COLOR_TOKEN, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var designUseSystemDarkTheme: Boolean by preferences.delegates.boolean(
+        key = KEY_DESIGN_SYSTEM_DARK_THEME,
+        default = true,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var designDarkThemeToken: String
-        get() =  preferences.getString(KEY_DESIGN_DARK_TOKEN, "${DarkThemeToken.FRAPPE}") ?: "${DarkThemeToken.FRAPPE}"
-        set(value) = preferences.edit()
-            .putString(KEY_DESIGN_DARK_TOKEN, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var designDarkTheme: Boolean by preferences.delegates.boolean(
+        key = KEY_DESIGN_DARK_THEME,
+        default = true,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var backgroundGeneration: Boolean
-        get() = preferences.getBoolean(KEY_BACKGROUND_GENERATION, false)
-        set(value) = preferences.edit()
-            .putBoolean(KEY_BACKGROUND_GENERATION, value)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var designColorToken: String by preferences.delegates.string(
+        key = KEY_DESIGN_COLOR_TOKEN,
+        default = "${ColorToken.MAUVE}",
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var backgroundProcessCount: Int
-        get() = preferences.getInt(KEY_BACKGROUND_PROCESS_COUNT, 0)
-        set(value) = preferences.edit()
-            .putInt(KEY_BACKGROUND_PROCESS_COUNT, value)
-            .apply()
+    override var designDarkThemeToken: String by preferences.delegates.string(
+        key = KEY_DESIGN_DARK_TOKEN,
+        default = "${DarkThemeToken.FRAPPE}",
+        onChanged = ::onPreferencesChanged,
+    )
+    override var backgroundGeneration: Boolean by preferences.delegates.boolean(
+        key = KEY_BACKGROUND_GENERATION,
+        onChanged = ::onPreferencesChanged,
+    )
 
-    override var galleryGrid: Grid
-        get() = preferences.getInt(KEY_GALLERY_GRID, 0).let { Grid.entries[it] }
-        set(value) = preferences.edit()
-            .putInt(KEY_GALLERY_GRID, value.ordinal)
-            .apply()
-            .also { onPreferencesChanged() }
+    override var backgroundProcessCount: Int by preferences.delegates.int(
+        key = KEY_BACKGROUND_PROCESS_COUNT,
+        default = 0,
+    )
+
+    override var galleryGrid: Grid by preferences.delegates.complexInt(
+        key = KEY_GALLERY_GRID,
+        default = Grid.entries.first(),
+        serialize = { grid -> grid.ordinal },
+        deserialize = { index -> Grid.entries[index] },
+        onChanged = ::onPreferencesChanged,
+    )
 
     override fun observe(): Flowable<Settings> = preferencesChangedSubject
         .toFlowable(BackpressureStrategy.LATEST)
@@ -273,8 +234,8 @@ class PreferenceManagerImpl(
                 sdModel = sdModel,
                 demoMode = demoMode,
                 developerMode = developerMode,
-                localDiffusionAllowCancel = localDiffusionAllowCancel,
-                localDiffusionSchedulerThread = localDiffusionSchedulerThread,
+                localDiffusionAllowCancel = localOnnxAllowCancel,
+                localDiffusionSchedulerThread = localOnnxSchedulerThread,
                 monitorConnectivity = monitorConnectivity,
                 backgroundGeneration = backgroundGeneration,
                 autoSaveAiResults = autoSaveAiResults,
@@ -283,7 +244,7 @@ class PreferenceManagerImpl(
                 formPromptTaggedInput = formPromptTaggedInput,
                 source = source,
                 hordeApiKey = hordeApiKey,
-                localUseNNAPI = localUseNNAPI,
+                localUseNNAPI = localOnnxUseNNAPI,
                 designUseSystemColorPalette = designUseSystemColorPalette,
                 designUseSystemDarkTheme = designUseSystemDarkTheme,
                 designDarkTheme = designDarkTheme,
@@ -293,7 +254,11 @@ class PreferenceManagerImpl(
             )
         }
 
-    private fun onPreferencesChanged() = preferencesChangedSubject.onNext(Unit)
+    override fun refresh(): Completable = Completable.fromAction {
+        preferencesChangedSubject.onNext(Unit)
+    }
+
+    private fun <T> onPreferencesChanged(value: T) = preferencesChangedSubject.onNext(value)
 
     companion object {
         const val KEY_SERVER_URL = "key_server_url"
@@ -302,13 +267,14 @@ class PreferenceManagerImpl(
         const val KEY_DEMO_MODE = "key_demo_mode"
         const val KEY_DEVELOPER_MODE = "key_developer_mode"
         const val KEY_LOCAL_DIFFUSION_CUSTOM_MODEL_PATH = "key_local_diffusion_custom_model_path"
+        const val KEY_MEDIA_PIPE_CUSTOM_MODEL_PATH = "key_mediapipe_custom_model_path"
         const val KEY_ALLOW_LOCAL_DIFFUSION_CANCEL = "key_allow_local_diffusion_cancel"
         const val KEY_LOCAL_DIFFUSION_SCHEDULER_THREAD = "key_local_diffusion_scheduler_thread"
-        const val KEY_MONITOR_CONNECTIVITY = "key_monitor_connectivity"
+        const val KEY_MONITOR_CONNECTIVITY = "key_monitor_connection"
         const val KEY_AI_AUTO_SAVE = "key_ai_auto_save"
         const val KEY_SAVE_TO_MEDIA_STORE = "key_save_to_media_store"
         const val KEY_FORM_ALWAYS_SHOW_ADVANCED_OPTIONS = "key_always_show_advanced_options"
-        const val KEY_FORM_PROMPT_TAGGED_INPUT = "key_prompt_tagged_input"
+        const val KEY_FORM_PROMPT_TAGGED_INPUT = "key_prompt_tagged_input_kb"
         const val KEY_SERVER_SOURCE = "key_server_source"
         const val KEY_SD_MODEL = "key_sd_model"
         const val KEY_HORDE_API_KEY = "key_horde_api_key"
@@ -319,6 +285,7 @@ class PreferenceManagerImpl(
         const val KEY_STABILITY_AI_ENGINE_ID_KEY = "key_stability_ai_engine_id_key"
         const val KEY_ON_BOARDING_COMPLETE = "key_on_boarding_complete"
         const val KEY_FORCE_SETUP_AFTER_UPDATE = "force_upd_setup_v0.x.x-v0.6.2"
+        const val KEY_MEDIA_PIPE_MODEL_ID = "key_mediapipe_model_id"
         const val KEY_LOCAL_MODEL_ID = "key_local_model_id"
         const val KEY_LOCAL_NN_API = "key_local_nn_api"
         const val KEY_DESIGN_DYNAMIC_COLORS = "key_design_dynamic_colors"

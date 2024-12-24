@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -17,14 +18,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.shifthackz.aisdv1.core.model.asString
-import com.shifthackz.aisdv1.core.ui.MviComponent
+import com.shifthackz.android.core.mvi.MviComponent
 import com.shifthackz.aisdv1.presentation.model.NavItem
-import com.shifthackz.aisdv1.presentation.utils.Constants
+import com.shifthackz.aisdv1.presentation.navigation.NavigationRoute.HomeNavigation
 import com.shifthackz.aisdv1.presentation.widget.connectivity.ConnectivityComposable
 import com.shifthackz.aisdv1.presentation.widget.item.NavigationItemIcon
 import org.koin.androidx.compose.koinViewModel
@@ -38,18 +40,18 @@ fun HomeNavigationScreen(
     val viewModel = koinViewModel<HomeNavigationViewModel>()
     val navController = rememberNavController()
     val backStackEntry = navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry.value?.destination?.route
+    val currentDestination = backStackEntry.value?.destination
 
-    LaunchedEffect(currentRoute) {
-        if (currentRoute == Constants.ROUTE_TXT_TO_IMG) {
-            viewModel.processIntent(HomeNavigationIntent.Update(currentRoute))
+    LaunchedEffect(currentDestination) {
+        if (currentDestination?.hasRoute(HomeNavigation.TxtToImg::class) == true) {
+            viewModel.processIntent(HomeNavigationIntent.Update(HomeNavigation.TxtToImg))
         }
     }
 
     MviComponent(
         viewModel = viewModel,
         processEffect = { effect ->
-            navController.navigate(effect.route) {
+            navController.navigate(effect.navRoute) {
                 navController.graph.startDestinationRoute?.let { route ->
                     popUpTo(route) {
                         saveState = true
@@ -59,14 +61,16 @@ fun HomeNavigationScreen(
                 restoreState = true
             }
         },
-        applySystemUiColors = true,
-        navigationBarColor = MaterialTheme.colorScheme.surface,
     ) { _, processIntent ->
         Scaffold(
+            modifier = Modifier.imePadding(),
             bottomBar = {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ) {
                     navItems.forEach { item ->
-                        val selected = item.route == currentRoute
+                        val selected =
+                            currentDestination?.route?.contains("${item.navRoute}") == true
                         NavigationBarItem(
                             selected = selected,
                             label = {
@@ -79,7 +83,7 @@ fun HomeNavigationScreen(
                                 selectedIndicatorColor = MaterialTheme.colorScheme.primary,
                             ),
                             icon = { NavigationItemIcon(item.icon) },
-                            onClick = { processIntent(HomeNavigationIntent.Route(item.route)) },
+                            onClick = { processIntent(HomeNavigationIntent.Route(item.navRoute)) },
                         )
                     }
                 }
@@ -99,11 +103,25 @@ fun HomeNavigationScreen(
                     NavHost(
                         modifier = Modifier.fillMaxSize(),
                         navController = navController,
-                        startDestination = navItems.first().route,
+                        startDestination = navItems.first().navRoute,
                     ) {
                         navItems.forEach { item ->
-                            composable(item.route) {
-                                item.content?.invoke()
+                            when (item.navRoute as HomeNavigation) {
+                                HomeNavigation.Gallery -> composable<HomeNavigation.Gallery> {
+                                    item.content?.invoke()
+                                }
+
+                                HomeNavigation.TxtToImg -> composable<HomeNavigation.TxtToImg> {
+                                    item.content?.invoke()
+                                }
+
+                                HomeNavigation.ImgToImg -> composable<HomeNavigation.ImgToImg> {
+                                    item.content?.invoke()
+                                }
+
+                                HomeNavigation.Settings -> composable<HomeNavigation.Settings> {
+                                    item.content?.invoke()
+                                }
                             }
                         }
                     }

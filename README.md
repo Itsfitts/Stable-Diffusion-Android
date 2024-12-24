@@ -26,7 +26,7 @@ Stable Diffusion AI (SDAI) is an easy-to-use app that:
 - Can use server environment powered by [AI Horde](https://stablehorde.net/) (a crowdsourced distributed cluster of Stable Diffusion workers)
 - Can use server environment powered by [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) (AUTOMATIC1111)
 - Can use server environment powered by [SwarmUI](https://github.com/mcmonkeyprojects/SwarmUI)
-- Can use server envitonment powered by [Hugging Face Inference API](https://huggingface.co/docs/api-inference/quicktour).
+- Can use server environment powered by [Hugging Face Inference API](https://huggingface.co/docs/api-inference/quicktour).
 - Can use server environment powered by [OpenAI](https://platform.openai.com/docs/api-reference/images) (DALL-E-2, DALL-E-3).
 - Can use server environment powered by [Stability AI](https://platform.stability.ai/).
 - Can use local environment powered by LocalDiffusion (Beta)
@@ -112,7 +112,15 @@ OpenAI requires to use API KEY, which can be created in [OpenAI API Key settings
 
 StabilityAI requires to use API KEY, which can be created in [API Keys page](https://platform.stability.ai/account/keys).
 
-### Option 7: Local Diffusion (Beta)
+### Option 7: Local Diffusion Microsoft ONNX Runtime (Beta)
+
+Only **txt2img** mode is supported.
+
+Allows to use phone resources to generate images.
+
+### Option 8: Local Diffusion Google AI MediaPipe (Beta)
+
+Available only in **playstore** and **full** flavors.
 
 Only **txt2img** mode is supported.
 
@@ -134,13 +142,11 @@ User interface of the app is translated for languages listed in this table:
 
 Any contributions to the translations are welcome.
 
-## Difference between builds from Google Play and F-Droid/GitHub releases
+## Difference between build flavors (Google Play, F-Droid, GitHub releases)
 
-As Google Play has some policies that app needs to be compliant with in order to be allowed to publish on Google Play there are some differences between builds distributed via Google Play and F-Droid/GitHub releases, listed in this table:
+There are some reasons that some of the SDAI app features can not be distributed through different sources (Google Play, F-Droid) because of rules and compliance policies.
 
-| Feature | Google Play build | F-Droid/GitHub build | Reason |
-| --- |:---:|:---:| --- |
-| Sideloading LocalDiffusion custom model | ❌ | ✅ | Google Play does not allow publishing apps with `android.permission.MANAGE_EXTERNAL_STORAGE` permission, which is required to read custom model files from external storage directly. |
+The difference between SDAI app flavors are described at the project wiki page [Build flavor difference](https://github.com/ShiftHackZ/Stable-Diffusion-Android/wiki/Build-flavor-difference).
 
 ## Donate
 

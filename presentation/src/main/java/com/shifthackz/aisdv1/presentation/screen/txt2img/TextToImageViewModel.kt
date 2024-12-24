@@ -1,12 +1,14 @@
 package com.shifthackz.aisdv1.presentation.screen.txt2img
 
 import com.shifthackz.aisdv1.core.common.log.errorLog
+import com.shifthackz.aisdv1.core.common.schedulers.DispatchersProvider
 import com.shifthackz.aisdv1.core.common.schedulers.SchedulersProvider
 import com.shifthackz.aisdv1.core.common.schedulers.subscribeOnMainThread
 import com.shifthackz.aisdv1.core.model.asUiText
 import com.shifthackz.aisdv1.core.notification.PushNotificationManager
 import com.shifthackz.aisdv1.core.validation.dimension.DimensionValidator
 import com.shifthackz.aisdv1.domain.entity.HordeProcessStatus
+import com.shifthackz.aisdv1.domain.entity.LocalDiffusionStatus
 import com.shifthackz.aisdv1.domain.entity.ServerSource
 import com.shifthackz.aisdv1.domain.feature.diffusion.LocalDiffusion
 import com.shifthackz.aisdv1.domain.feature.work.BackgroundTaskManager
@@ -31,6 +33,7 @@ import io.reactivex.rxjava3.kotlin.subscribeBy
 import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 
 class TextToImageViewModel(
+    dispatchersProvider: DispatchersProvider,
     generationFormUpdateEvent: GenerationFormUpdateEvent,
     getStableDiffusionSamplersUseCase: GetStableDiffusionSamplersUseCase,
     observeHordeProcessStatusUseCase: ObserveHordeProcessStatusUseCase,
@@ -64,14 +67,18 @@ class TextToImageViewModel(
 ) {
 
     private val progressModal: Modal
-        get() {
-            if (currentState.mode == ServerSource.LOCAL) {
-                return Modal.Generating(canCancel = preferenceManager.localDiffusionAllowCancel)
+        get() = when (currentState.mode) {
+            ServerSource.LOCAL_MICROSOFT_ONNX,
+            ServerSource.LOCAL_GOOGLE_MEDIA_PIPE -> {
+                Modal.Generating(canCancel = preferenceManager.localOnnxAllowCancel)
             }
-            return Modal.Communicating()
+
+            else -> Modal.Communicating()
         }
 
     override val initialState = TextToImageState()
+
+    override val effectDispatcher = dispatchersProvider.immediate
 
     init {
         !generationFormUpdateEvent
@@ -131,7 +138,7 @@ class TextToImageViewModel(
             ?.let(::setActiveModal)
     }
 
-    override fun onReceivedLocalDiffusionStatus(status: LocalDiffusion.Status) {
+    override fun onReceivedLocalDiffusionStatus(status: LocalDiffusionStatus) {
         (currentState.screenModal as? Modal.Generating)
             ?.copy(status = status)
             ?.let(::setActiveModal)

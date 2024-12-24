@@ -9,6 +9,7 @@ import com.shifthackz.aisdv1.core.common.schedulers.subscribeOnMainThread
 import com.shifthackz.aisdv1.core.validation.dimension.DimensionValidator
 import com.shifthackz.aisdv1.core.viewmodel.MviRxViewModel
 import com.shifthackz.aisdv1.domain.entity.HordeProcessStatus
+import com.shifthackz.aisdv1.domain.entity.LocalDiffusionStatus
 import com.shifthackz.aisdv1.domain.entity.OpenAiSize
 import com.shifthackz.aisdv1.domain.entity.ServerSource
 import com.shifthackz.aisdv1.domain.entity.StabilityAiSampler
@@ -118,7 +119,7 @@ abstract class GenerationMviViewModel<S : GenerationMviState, I : GenerationMviI
 
     open fun onReceivedHordeStatus(status: HordeProcessStatus) {}
 
-    open fun onReceivedLocalDiffusionStatus(status: LocalDiffusion.Status) {}
+    open fun onReceivedLocalDiffusionStatus(status: LocalDiffusionStatus) {}
 
     override fun onCleared() {
         super.onCleared()
@@ -229,6 +230,8 @@ abstract class GenerationMviViewModel<S : GenerationMviState, I : GenerationMviI
             is GenerationMviIntent.Result.View -> !saveLastResultToCacheUseCase(intent.ai)
                 .subscribeOnMainThread(schedulersProvider)
                 .subscribeBy(::errorLog) { mainRouter.navigateToGalleryDetails(it.id) }
+
+            is GenerationMviIntent.Result.Report -> mainRouter.navigateToReportImage(intent.ai.id)
 
             is GenerationMviIntent.SetModal -> setActiveModal(intent.modal)
 

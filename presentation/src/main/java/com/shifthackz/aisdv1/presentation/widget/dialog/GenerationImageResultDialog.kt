@@ -19,10 +19,10 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,12 +49,13 @@ fun GenerationImageResultDialog(
     showSaveButton: Boolean = false,
     onDismissRequest: () -> Unit = {},
     onSaveRequest: () -> Unit = {},
+    onReportRequest: () -> Unit = {},
     onViewDetailRequest: () -> Unit = {},
 ) {
     Dialog(onDismissRequest = onDismissRequest) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = AlertDialogDefaults.containerColor,
+            color = MaterialTheme.colorScheme.background,
         ) {
             Column(
                 modifier = Modifier
@@ -65,7 +66,7 @@ fun GenerationImageResultDialog(
                 Image(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .defaultMinSize(minHeight = 300.dp,)
+                        .defaultMinSize(minHeight = 300.dp)
                         .align(Alignment.CenterHorizontally)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -88,32 +89,30 @@ fun GenerationImageResultDialog(
                             color = LocalContentColor.current,
                         )
                     }
-                    OutlinedButton(
-                        modifier = Modifier
-                            .padding(top = 8.dp)
-                            .align(Alignment.CenterHorizontally)
-                            .fillMaxWidth(0.7f),
-                        onClick = onDismissRequest,
-                    ) {
-                        Text(
-                            text = stringResource(id = LocalizationR.string.action_close),
-                            color = LocalContentColor.current,
-                        )
-                    }
-
-                } else {
-                    Button(
-                        modifier = Modifier
-                            .padding(top = 16.dp)
-                            .align(Alignment.CenterHorizontally)
-                            .fillMaxWidth(0.7f),
-                        onClick = onDismissRequest,
-                    ) {
-                        Text(
-                            text = stringResource(id = LocalizationR.string.action_close),
-                            color = LocalContentColor.current,
-                        )
-                    }
+                }
+                Button(
+                    modifier = Modifier
+                        .padding(top = 16.dp)
+                        .align(Alignment.CenterHorizontally)
+                        .fillMaxWidth(0.7f),
+                    onClick = onReportRequest,
+                ) {
+                    Text(
+                        text = stringResource(id = LocalizationR.string.report_title),
+                        color = LocalContentColor.current,
+                    )
+                }
+                OutlinedButton(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .align(Alignment.CenterHorizontally)
+                        .fillMaxWidth(0.7f),
+                    onClick = onDismissRequest,
+                ) {
+                    Text(
+                        text = stringResource(id = LocalizationR.string.action_close),
+                        color = LocalContentColor.current,
+                    )
                 }
             }
         }
@@ -155,7 +154,7 @@ fun ColumnScope.GenerationImageBatchResultModal(
         items(results.size) { index ->
             val result = results[index]
             val bmp = base64ToBitmap(result.image)
-            val item = GalleryGridItemUi(result.id, bmp)
+            val item = GalleryGridItemUi(result.id, bmp, result.hidden)
             GalleryUiItem(
                 item = item,
                 onClick = { onViewDetailRequest(result) }

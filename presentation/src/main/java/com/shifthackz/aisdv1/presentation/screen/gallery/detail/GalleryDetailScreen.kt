@@ -21,7 +21,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -31,9 +34,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -49,7 +54,7 @@ import com.shifthackz.aisdv1.core.model.UiText
 import com.shifthackz.aisdv1.core.model.asString
 import com.shifthackz.aisdv1.core.model.asUiText
 import com.shifthackz.aisdv1.core.sharing.shareFile
-import com.shifthackz.aisdv1.core.ui.MviComponent
+import com.shifthackz.android.core.mvi.MviComponent
 import com.shifthackz.aisdv1.domain.entity.AiGenerationResult
 import com.shifthackz.aisdv1.presentation.modal.ModalRenderer
 import com.shifthackz.aisdv1.presentation.theme.colors
@@ -57,7 +62,7 @@ import com.shifthackz.aisdv1.presentation.utils.Constants
 import com.shifthackz.aisdv1.presentation.widget.image.ZoomableImage
 import com.shifthackz.aisdv1.presentation.widget.image.ZoomableImageSource
 import com.shifthackz.catppuccin.palette.Catppuccin
-import org.koin.androidx.compose.getViewModel
+import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import com.shifthackz.aisdv1.core.localization.R as LocalizationR
@@ -70,7 +75,7 @@ fun GalleryDetailScreen(itemId: Long) {
     val fileProviderDescriptor: FileProviderDescriptor = koinInject()
     val galleryDetailSharing: GalleryDetailSharing = koinInject()
     MviComponent(
-        viewModel = getViewModel<GalleryDetailViewModel>(
+        viewModel = koinViewModel<GalleryDetailViewModel>(
             parameters = { parametersOf(itemId) },
         ),
         processEffect = { effect ->
@@ -91,8 +96,6 @@ fun GalleryDetailScreen(itemId: Long) {
                 }
             }
         },
-        applySystemUiColors = true,
-        navigationBarColor = MaterialTheme.colorScheme.surface,
     ) { state, intentHandler ->
         ScreenContent(
             modifier = Modifier.fillMaxSize(),
@@ -185,8 +188,28 @@ private fun GalleryDetailNavigationBar(
     state: GalleryDetailState,
     processIntent: (GalleryDetailIntent) -> Unit = {},
 ) {
-    Column {
+    Column(
+        modifier = Modifier
+            .background(color = MaterialTheme.colorScheme.surface),
+    ) {
         if (state is GalleryDetailState.Content) {
+            OutlinedButton(
+                modifier = Modifier
+                    .padding(horizontal = 24.dp, vertical = 4.dp)
+                    .fillMaxWidth()
+                    .align(Alignment.CenterHorizontally),
+                onClick = { processIntent(GalleryDetailIntent.Report) },
+            ) {
+                Icon(
+                    modifier = Modifier.padding(end = 8.dp),
+                    imageVector = Icons.Default.Report,
+                    contentDescription = "Report",
+                )
+                Text(
+                    text = stringResource(LocalizationR.string.report_title),
+                    color = LocalContentColor.current
+                )
+            }
             Row(
                 modifier = Modifier
                     .background(color = MaterialTheme.colorScheme.surface)
@@ -215,6 +238,18 @@ private fun GalleryDetailNavigationBar(
                     )
                 }
                 IconButton(
+                    onClick = { processIntent(GalleryDetailIntent.ToggleVisibility) },
+                ) {
+                    Icon(
+                        imageVector = if (state.hidden) {
+                            Icons.Default.VisibilityOff
+                        } else {
+                            Icons.Default.Visibility
+                        },
+                        contentDescription = "Toggle visibility",
+                    )
+                }
+                IconButton(
                     onClick = { processIntent(GalleryDetailIntent.Export.Params) },
                 ) {
                     Icon(
@@ -232,7 +267,9 @@ private fun GalleryDetailNavigationBar(
                 }
             }
         }
-        NavigationBar {
+        NavigationBar(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
             state.tabs.forEach { tab ->
                 NavigationBarItem(
                     selected = state.selectedTab == tab,
@@ -274,6 +311,7 @@ private fun GalleryDetailContentState(
             GalleryDetailState.Tab.IMAGE -> ZoomableImage(
                 modifier = Modifier.fillMaxSize(),
                 source = ZoomableImageSource.Bmp(state.bitmap),
+                hideImage = state.hidden,
             )
 
             GalleryDetailState.Tab.ORIGINAL -> state.inputBitmap?.let { bmp ->

@@ -8,6 +8,7 @@ import com.shifthackz.aisdv1.core.common.appbuild.BuildType
 import com.shifthackz.aisdv1.core.common.appbuild.BuildVersion
 import com.shifthackz.aisdv1.core.common.file.FileProviderDescriptor
 import com.shifthackz.aisdv1.core.common.links.LinksProvider
+import com.shifthackz.aisdv1.core.common.schedulers.DispatchersProvider
 import com.shifthackz.aisdv1.core.common.schedulers.SchedulersProvider
 import com.shifthackz.aisdv1.core.common.time.TimeProvider
 import com.shifthackz.aisdv1.domain.entity.ServerSource
@@ -26,6 +27,8 @@ import com.shifthackz.aisdv1.presentation.activity.AiStableDiffusionActivity
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Scheduler
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -45,6 +48,7 @@ val providersModule = module {
         object : ApiUrlProvider {
             override val stableDiffusionAutomaticApiUrl: String = DEFAULT_SERVER_URL
             override val stableDiffusionAppApiUrl: String = BuildConfig.UPDATE_API_URL
+            override val stableDiffusionReportApiUrl: String = BuildConfig.REPORT_API_URL
             override val hordeApiUrl: String = BuildConfig.HORDE_AI_URL
             override val imageCdnApiUrl: String = BuildConfig.IMAGE_CDN_URL
             override val huggingFaceApiUrl: String = BuildConfig.HUGGING_FACE_URL
@@ -127,8 +131,20 @@ val providersModule = module {
                 append("$version")
                 if (BuildConfig.DEBUG) append("-dev")
                 append(" ($buildNumber)")
-                if (type == BuildType.FOSS) append(" FOSS")
+                when (type) {
+                    BuildType.FULL -> append(" FULL")
+                    BuildType.FOSS -> append(" FOSS")
+                    BuildType.PLAY -> Unit
+                }
             }
+        }
+    }
+
+    single<DispatchersProvider> {
+        object : DispatchersProvider {
+            override val io: CoroutineDispatcher = Dispatchers.IO
+            override val ui: CoroutineDispatcher = Dispatchers.Main
+            override val immediate: CoroutineDispatcher = Dispatchers.Main.immediate
         }
     }
 
@@ -161,14 +177,14 @@ val providersModule = module {
 
     single {
         DeviceNNAPIFlagProvider {
-            get<PreferenceManager>().localUseNNAPI
+            get<PreferenceManager>().localOnnxUseNNAPI
                 .let { nnApi -> if (nnApi) LocalDiffusionFlag.NN_API else LocalDiffusionFlag.CPU }
                 .let(LocalDiffusionFlag::value)
         }
     }
 
     single {
-        LocalModelIdProvider { get<PreferenceManager>().localModelId }
+        LocalModelIdProvider { get<PreferenceManager>().localOnnxModelId }
     }
 
     single {

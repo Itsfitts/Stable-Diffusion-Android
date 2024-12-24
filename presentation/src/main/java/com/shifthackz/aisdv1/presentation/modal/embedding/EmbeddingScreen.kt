@@ -1,7 +1,5 @@
 package com.shifthackz.aisdv1.presentation.modal.embedding
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -35,7 +32,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -46,13 +46,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.shifthackz.aisdv1.core.extensions.shimmer
-import com.shifthackz.aisdv1.core.ui.MviComponent
 import com.shifthackz.aisdv1.domain.entity.ServerSource
 import com.shifthackz.aisdv1.presentation.modal.extras.ExtrasEffect
 import com.shifthackz.aisdv1.presentation.model.ErrorState
 import com.shifthackz.aisdv1.presentation.widget.error.ErrorComposable
 import com.shifthackz.aisdv1.presentation.widget.source.getName
 import com.shifthackz.aisdv1.presentation.widget.toolbar.ModalDialogToolbar
+import com.shifthackz.android.core.mvi.MviComponent
 import org.koin.androidx.compose.koinViewModel
 import com.shifthackz.aisdv1.core.localization.R as LocalizationR
 import com.shifthackz.aisdv1.presentation.R as PresentationR
@@ -102,7 +102,7 @@ private fun ScreenContent(
         Surface(
             modifier = modifier.fillMaxHeight(0.7f),
             shape = RoundedCornerShape(16.dp),
-            color = AlertDialogDefaults.containerColor,
+            color = MaterialTheme.colorScheme.background,
         ) {
             Scaffold(
                 bottomBar = {
@@ -145,22 +145,33 @@ private fun ScreenContent(
                     if (!state.loading && state.embeddings.isNotEmpty()) {
                         Row(
                             modifier = modifier
-                                .padding(horizontal = 12.dp)
                                 .fillMaxWidth()
                                 .height(intrinsicSize = IntrinsicSize.Max)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(color = bgColor)
                                 .onSizeChanged {
                                     if (it.height > dividerHeight) dividerHeight = it.height
-                                },
+                                }
+                                .drawBehind {
+                                    drawRoundRect(
+                                        color = bgColor,
+                                        cornerRadius = CornerRadius(16.dp.toPx())
+                                    )
+                                }
+                                .padding(horizontal = 12.dp),
                         ) {
+                            val selectorBgColor =
+                                if (state.selector) MaterialTheme.colorScheme.primary else Color.Transparent
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(with(LocalDensity.current) { dividerHeight.toDp() })
                                     .weight(1f)
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(color = if (state.selector) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                    .drawBehind {
+                                        drawRoundRect(
+                                            color = selectorBgColor,
+                                            cornerRadius = CornerRadius(16.dp.toPx())
+                                        )
+                                    }
                                     .clickable { processIntent(EmbeddingIntent.ChangeSelector(true)) },
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -176,7 +187,12 @@ private fun ScreenContent(
                                     .fillMaxWidth()
                                     .weight(1f)
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(color = if (!state.selector) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                    .drawBehind {
+                                        drawRoundRect(
+                                            color = selectorBgColor,
+                                            cornerRadius = CornerRadius(16.dp.toPx())
+                                        )
+                                    }
                                     .clickable { processIntent(EmbeddingIntent.ChangeSelector(false)) },
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -273,17 +289,25 @@ private fun EmbeddingItemComposable(
     onItemToggle: (EmbeddingItemUi) -> Unit,
 ) {
     val isApplied = (selector && item.isInPrompt) || (!selector && item.isInNegativePrompt)
+    val bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    val borderColor = MaterialTheme.colorScheme.primary
     Row(
         modifier = Modifier
             .padding(horizontal = 12.dp, vertical = 6.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .border(
-                width = 2.dp,
-                color = if (isApplied) MaterialTheme.colorScheme.primary else Color.Transparent,
-                shape = RoundedCornerShape(16.dp),
-            )
+            .drawBehind {
+                drawRoundRect(
+                    color = bgColor,
+                    cornerRadius = CornerRadius(16.dp.toPx()),
+                )
+                if (!isApplied) return@drawBehind
+                drawRoundRect(
+                    color = borderColor,
+                    style = Stroke(2.dp.toPx()),
+                    cornerRadius = CornerRadius(16.dp.toPx()),
+                )
+            }
             .clickable { onItemToggle(item) }
             .padding(vertical = 8.dp, horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,

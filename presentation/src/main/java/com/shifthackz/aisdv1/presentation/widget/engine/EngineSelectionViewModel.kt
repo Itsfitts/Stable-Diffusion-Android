@@ -3,6 +3,7 @@ package com.shifthackz.aisdv1.presentation.widget.engine
 import com.shifthackz.aisdv1.core.common.extensions.EmptyLambda
 import com.shifthackz.aisdv1.core.common.log.errorLog
 import com.shifthackz.aisdv1.core.common.model.Hexagonal
+import com.shifthackz.aisdv1.core.common.schedulers.DispatchersProvider
 import com.shifthackz.aisdv1.core.common.schedulers.SchedulersProvider
 import com.shifthackz.aisdv1.core.common.schedulers.subscribeOnMainThread
 import com.shifthackz.aisdv1.core.viewmodel.MviRxViewModel
@@ -10,7 +11,7 @@ import com.shifthackz.aisdv1.domain.entity.Configuration
 import com.shifthackz.aisdv1.domain.entity.LocalAiModel
 import com.shifthackz.aisdv1.domain.entity.ServerSource
 import com.shifthackz.aisdv1.domain.preference.PreferenceManager
-import com.shifthackz.aisdv1.domain.usecase.downloadable.ObserveLocalAiModelsUseCase
+import com.shifthackz.aisdv1.domain.usecase.downloadable.ObserveLocalOnnxModelsUseCase
 import com.shifthackz.aisdv1.domain.usecase.huggingface.FetchAndGetHuggingFaceModelsUseCase
 import com.shifthackz.aisdv1.domain.usecase.sdmodel.GetStableDiffusionModelsUseCase
 import com.shifthackz.aisdv1.domain.usecase.sdmodel.SelectStableDiffusionModelUseCase
@@ -22,18 +23,21 @@ import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.kotlin.subscribeBy
 
 class EngineSelectionViewModel(
+    dispatchersProvider: DispatchersProvider,
+    fetchAndGetSwarmUiModelsUseCase: FetchAndGetSwarmUiModelsUseCase,
+    observeLocalOnnxModelsUseCase: ObserveLocalOnnxModelsUseCase,
+    fetchAndGetStabilityAiEnginesUseCase: FetchAndGetStabilityAiEnginesUseCase,
+    getHuggingFaceModelsUseCase: FetchAndGetHuggingFaceModelsUseCase,
     private val preferenceManager: PreferenceManager,
     private val schedulersProvider: SchedulersProvider,
     private val getConfigurationUseCase: GetConfigurationUseCase,
     private val selectStableDiffusionModelUseCase: SelectStableDiffusionModelUseCase,
     private val getStableDiffusionModelsUseCase: GetStableDiffusionModelsUseCase,
-    fetchAndGetSwarmUiModelsUseCase: FetchAndGetSwarmUiModelsUseCase,
-    observeLocalAiModelsUseCase: ObserveLocalAiModelsUseCase,
-    fetchAndGetStabilityAiEnginesUseCase: FetchAndGetStabilityAiEnginesUseCase,
-    getHuggingFaceModelsUseCase: FetchAndGetHuggingFaceModelsUseCase,
 ) : MviRxViewModel<EngineSelectionState, EngineSelectionIntent, EmptyEffect>() {
 
     override val initialState = EngineSelectionState()
+
+    override val effectDispatcher = dispatchersProvider.immediate
 
     init {
         val configuration = preferenceManager
@@ -57,8 +61,8 @@ class EngineSelectionViewModel(
             .onErrorReturn { emptyList() }
             .toFlowable()
 
-        val localAiModels = observeLocalAiModelsUseCase()
-            .map { models -> models.filter { it.downloaded || it.id == LocalAiModel.CUSTOM.id } }
+        val localAiModels = observeLocalOnnxModelsUseCase()
+            .map { models -> models.filter { it.downloaded || it.id == LocalAiModel.CustomOnnx.id } }
             .onErrorReturn { emptyList() }
 
         !Flowable.combineLatest(
@@ -90,7 +94,7 @@ class EngineSelectionViewModel(
                             stEngines = stEngines.map { it.id },
                             selectedStEngine = config.stabilityAiEngineId,
                             localAiModels = localModels,
-                            selectedLocalAiModelId = localModels.firstOrNull { it.id == config.localModelId }?.id
+                            selectedLocalAiModelId = localModels.firstOrNull { it.id == config.localOnnxModelId }?.id
                                 ?: state.selectedLocalAiModelId
                         )
                     }
@@ -127,7 +131,7 @@ class EngineSelectionViewModel(
 
             ServerSource.STABILITY_AI -> preferenceManager.stabilityAiEngineId = intent.value
 
-            ServerSource.LOCAL -> preferenceManager.localModelId = intent.value
+            ServerSource.LOCAL_MICROSOFT_ONNX -> preferenceManager.localOnnxModelId = intent.value
 
             else -> Unit
         }

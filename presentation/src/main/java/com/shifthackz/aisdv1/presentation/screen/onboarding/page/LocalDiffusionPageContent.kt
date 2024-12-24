@@ -49,7 +49,6 @@ fun LocalDiffusionPageContent(
     ) {
         CompositionLocalProvider(LocalDensity provides onBoardingDensity) {
             val localModifier = Modifier
-                .gesturesDisabled()
                 .aspectRatio(onBoardingPhoneAspectRatio)
             Box(
                 contentAlignment = Alignment.Center,
@@ -58,7 +57,7 @@ fun LocalDiffusionPageContent(
                     modifier = localModifier,
                     state = TextToImageState(
                         onBoardingDemo = true,
-                        mode = ServerSource.LOCAL,
+                        mode = ServerSource.LOCAL_MICROSOFT_ONNX,
                         advancedToggleButtonVisible = false,
                         advancedOptionsVisible = true,
                         formPromptTaggedInput = true,
@@ -70,7 +69,8 @@ fun LocalDiffusionPageContent(
                 Box(
                     modifier = localModifier
                         .fillMaxWidth()
-                        .background(Color.Black.copy(alpha = 0.7f)),
+                        .background(Color.Black.copy(alpha = 0.7f))
+                        .gesturesDisabled(),
                     contentAlignment = Alignment.Center,
                 ) {
                     Box(

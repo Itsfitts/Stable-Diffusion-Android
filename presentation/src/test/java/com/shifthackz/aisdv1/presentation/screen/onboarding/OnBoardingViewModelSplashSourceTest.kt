@@ -1,5 +1,6 @@
 package com.shifthackz.aisdv1.presentation.screen.onboarding
 
+import com.shifthackz.aisdv1.core.common.appbuild.BuildInfoProvider
 import com.shifthackz.aisdv1.domain.entity.DarkThemeToken
 import com.shifthackz.aisdv1.domain.preference.PreferenceManager
 import com.shifthackz.aisdv1.domain.usecase.splash.SplashNavigationUseCase
@@ -7,6 +8,7 @@ import com.shifthackz.aisdv1.presentation.core.CoreViewModelInitializeStrategy
 import com.shifthackz.aisdv1.presentation.core.CoreViewModelTest
 import com.shifthackz.aisdv1.presentation.model.LaunchSource
 import com.shifthackz.aisdv1.presentation.navigation.router.main.MainRouter
+import com.shifthackz.aisdv1.presentation.stub.stubDispatchersProvider
 import com.shifthackz.aisdv1.presentation.stub.stubSchedulersProvider
 import io.mockk.every
 import io.mockk.mockk
@@ -22,15 +24,18 @@ class OnBoardingViewModelSplashSourceTest : CoreViewModelTest<OnBoardingViewMode
     private val stubMainRouter = mockk<MainRouter>()
     private val stubSplashNavigationUseCase = mockk<SplashNavigationUseCase>()
     private val stubPreferenceManager = mockk<PreferenceManager>()
+    private val stubBuildInfoProvider = mockk<BuildInfoProvider>()
 
     override val testViewModelStrategy = CoreViewModelInitializeStrategy.InitializeEveryTime
 
     override fun initializeViewModel() = OnBoardingViewModel(
-        source,
-        stubMainRouter,
-        stubSplashNavigationUseCase,
-        stubPreferenceManager,
-        stubSchedulersProvider,
+        launchSource = source,
+        dispatchersProvider = stubDispatchersProvider,
+        mainRouter = stubMainRouter,
+        splashNavigationUseCase = stubSplashNavigationUseCase,
+        preferenceManager = stubPreferenceManager,
+        schedulersProvider = stubSchedulersProvider,
+        buildInfoProvider = stubBuildInfoProvider,
     )
 
     @Before
@@ -44,6 +49,10 @@ class OnBoardingViewModelSplashSourceTest : CoreViewModelTest<OnBoardingViewMode
         every {
             stubPreferenceManager::onBoardingComplete.set(any())
         } returns Unit
+
+        every {
+            stubBuildInfoProvider.toString()
+        } returns ""
 
         every {
             stubPreferenceManager::onBoardingComplete.get()

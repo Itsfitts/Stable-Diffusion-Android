@@ -11,6 +11,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -52,21 +54,20 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.shifthackz.aisdv1.core.common.extensions.openUrl
 import com.shifthackz.aisdv1.core.common.extensions.showToast
 import com.shifthackz.aisdv1.core.common.math.roundTo
 import com.shifthackz.aisdv1.core.model.UiText
 import com.shifthackz.aisdv1.core.model.asUiText
-import com.shifthackz.aisdv1.core.ui.MviComponent
+import com.shifthackz.android.core.mvi.MviComponent
 import com.shifthackz.aisdv1.domain.entity.ServerSource
 import com.shifthackz.aisdv1.presentation.modal.ModalRenderer
 import com.shifthackz.aisdv1.presentation.screen.drawer.DrawerIntent
@@ -111,11 +112,17 @@ fun SettingsScreen() {
                         viewModel.processIntent(SettingsIntent.Permission.Storage(true))
                     }
                 }
+
                 SettingsEffect.RequestPermission.Notifications -> {
-                    if (PermissionUtil.checkNotificationPermission(context, notificationPermission::launch)) {
+                    if (PermissionUtil.checkNotificationPermission(
+                            context,
+                            notificationPermission::launch
+                        )
+                    ) {
                         viewModel.processIntent(SettingsIntent.Permission.Notification(true))
                     }
                 }
+
                 SettingsEffect.ShareLogFile -> ReportProblemEmailComposer().invoke(context)
                 is SettingsEffect.OpenUrl -> context.openUrl(effect.url)
                 SettingsEffect.DeveloperModeUnlocked -> context.showToast(
@@ -123,7 +130,6 @@ fun SettingsScreen() {
                 )
             }
         },
-        applySystemUiColors = false,
     ) { state, intentHandler ->
         SettingsScreenContent(
             state = state,
@@ -159,6 +165,7 @@ fun SettingsScreenContent(
                                 style = MaterialTheme.typography.headlineMedium,
                             )
                         },
+                        windowInsets = WindowInsets(0, 0, 0, 0),
                     )
                     BackgroundWorkWidget(
                         modifier = Modifier
@@ -170,7 +177,11 @@ fun SettingsScreenContent(
             content = { paddingValues ->
                 ContentSettingsState(
                     modifier = Modifier
-                        .padding(paddingValues)
+                        .padding(
+                            horizontal = paddingValues.calculateStartPadding(
+                                LocalLayoutDirection.current,
+                            ),
+                        )
                         .padding(horizontal = 16.dp),
                     state = state,
                     processIntent = processIntent,
@@ -194,15 +205,6 @@ private fun ContentSettingsState(
         isDark = isDark,
         darkThemeToken = state.darkThemeToken,
     )
-    val systemUiController = rememberSystemUiController()
-    val navBarColor = MaterialTheme.colorScheme.surface
-    LaunchedEffect(
-        isDark,
-        state.darkTheme,
-        state.darkThemeToken,
-    ) {
-        systemUiController.setNavigationBarColor(navBarColor)
-    }
     val scrollState = rememberScrollState()
     Column(
         modifier = modifier.verticalScroll(scrollState),
@@ -235,7 +237,8 @@ private fun ContentSettingsState(
                     ServerSource.HUGGING_FACE -> LocalizationR.string.srv_type_hugging_face_short
                     ServerSource.OPEN_AI -> LocalizationR.string.srv_type_open_ai
                     ServerSource.STABILITY_AI -> LocalizationR.string.srv_type_stability_ai
-                    ServerSource.LOCAL -> LocalizationR.string.srv_type_local_short
+                    ServerSource.LOCAL_MICROSOFT_ONNX -> LocalizationR.string.srv_type_local_short
+                    ServerSource.LOCAL_GOOGLE_MEDIA_PIPE -> LocalizationR.string.srv_type_media_pipe_short
                     ServerSource.SWARM_UI -> LocalizationR.string.srv_type_swarm_ui
                 }.asUiText(),
                 onClick = { processIntent(SettingsIntent.NavigateConfiguration) },
@@ -256,7 +259,7 @@ private fun ContentSettingsState(
                 endValueText = state.sdModelSelected.asUiText(),
                 onClick = { processIntent(SettingsIntent.SdModel.OpenChooser) },
             )
-            if (state.showLocalUseNNAPI) {
+            if (state.showLocalMicrosoftONNXUseNNAPI) {
                 SettingsItem(
                     modifier = itemModifier,
                     loading = state.loading,
@@ -577,48 +580,50 @@ private fun ContentSettingsState(
         }
         //endregion
 
-        //region LINKS & OTHERS
-        SettingsHeader(
-            modifier = headerModifier,
-            loading = state.loading,
-            text = LocalizationR.string.settings_header_info.asUiText(),
-        )
-        SettingsItem(
-            modifier = itemModifier,
-            loading = state.loading,
-            startIcon = Icons.Default.MonetizationOn,
-            text = LocalizationR.string.settings_item_donate.asUiText(),
-            onClick = { processIntent(SettingsIntent.Action.Donate) },
-        )
-        SettingsItem(
-            modifier = itemModifier,
-            loading = state.loading,
-            startIcon = Icons.Default.AllInclusive,
-            text = LocalizationR.string.settings_item_on_boarding.asUiText(),
-            onClick = { processIntent(SettingsIntent.Action.OnBoarding) },
-        )
-        SettingsItem(
-            modifier = itemModifier,
-            loading = state.loading,
-            startIcon = Icons.Default.Report,
-            text = LocalizationR.string.settings_item_report_problem.asUiText(),
-            onClick = { processIntent(SettingsIntent.Action.ReportProblem) },
-        )
-        SettingsItem(
-            modifier = itemModifier,
-            loading = state.loading,
-            startIcon = Icons.Default.Gavel,
-            text = LocalizationR.string.settings_item_policy.asUiText(),
-            onClick = { processIntent(SettingsIntent.LaunchUrl.OpenPolicy) },
-        )
-        SettingsItem(
-            modifier = itemModifier,
-            loading = state.loading,
-            startIcon = Icons.Default.Code,
-            text = LocalizationR.string.settings_item_source.asUiText(),
-            onClick = { processIntent(SettingsIntent.LaunchUrl.OpenSourceCode) },
-        )
-        //endregion
+        if (!state.onBoardingDemo) {
+            //region LINKS & OTHERS
+            SettingsHeader(
+                modifier = headerModifier,
+                loading = state.loading,
+                text = LocalizationR.string.settings_header_info.asUiText(),
+            )
+            SettingsItem(
+                modifier = itemModifier,
+                loading = state.loading,
+                startIcon = Icons.Default.MonetizationOn,
+                text = LocalizationR.string.settings_item_donate.asUiText(),
+                onClick = { processIntent(SettingsIntent.Action.Donate) },
+            )
+            SettingsItem(
+                modifier = itemModifier,
+                loading = state.loading,
+                startIcon = Icons.Default.AllInclusive,
+                text = LocalizationR.string.settings_item_on_boarding.asUiText(),
+                onClick = { processIntent(SettingsIntent.Action.OnBoarding) },
+            )
+            SettingsItem(
+                modifier = itemModifier,
+                loading = state.loading,
+                startIcon = Icons.Default.Report,
+                text = LocalizationR.string.settings_item_report_problem.asUiText(),
+                onClick = { processIntent(SettingsIntent.Action.ReportProblem) },
+            )
+            SettingsItem(
+                modifier = itemModifier,
+                loading = state.loading,
+                startIcon = Icons.Default.Gavel,
+                text = LocalizationR.string.settings_item_policy.asUiText(),
+                onClick = { processIntent(SettingsIntent.LaunchUrl.OpenPolicy) },
+            )
+            SettingsItem(
+                modifier = itemModifier,
+                loading = state.loading,
+                startIcon = Icons.Default.Code,
+                text = LocalizationR.string.settings_item_source.asUiText(),
+                onClick = { processIntent(SettingsIntent.LaunchUrl.OpenSourceCode) },
+            )
+            //endregion
+        }
 
         AnimatedVisibility(visible = state.appVersion.isNotEmpty()) {
             Text(

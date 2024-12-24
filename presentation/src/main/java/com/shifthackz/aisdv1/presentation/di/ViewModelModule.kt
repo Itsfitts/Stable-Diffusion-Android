@@ -17,6 +17,7 @@ import com.shifthackz.aisdv1.presentation.screen.inpaint.InPaintViewModel
 import com.shifthackz.aisdv1.presentation.screen.loader.ConfigurationLoaderViewModel
 import com.shifthackz.aisdv1.presentation.screen.logger.LoggerViewModel
 import com.shifthackz.aisdv1.presentation.screen.onboarding.OnBoardingViewModel
+import com.shifthackz.aisdv1.presentation.screen.report.ReportViewModel
 import com.shifthackz.aisdv1.presentation.screen.settings.SettingsViewModel
 import com.shifthackz.aisdv1.presentation.screen.setup.ServerSetupViewModel
 import com.shifthackz.aisdv1.presentation.screen.splash.SplashViewModel
@@ -26,8 +27,8 @@ import com.shifthackz.aisdv1.presentation.theme.global.AiSdAppThemeViewModel
 import com.shifthackz.aisdv1.presentation.widget.connectivity.ConnectivityViewModel
 import com.shifthackz.aisdv1.presentation.widget.engine.EngineSelectionViewModel
 import com.shifthackz.aisdv1.presentation.widget.work.BackgroundWorkViewModel
-import org.koin.androidx.viewmodel.dsl.viewModel
-import org.koin.androidx.viewmodel.dsl.viewModelOf
+import org.koin.core.module.dsl.viewModel
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val viewModelModule = module {
@@ -57,10 +58,12 @@ val viewModelModule = module {
     viewModel { parameters ->
         OnBoardingViewModel(
             launchSource = LaunchSource.fromKey(parameters.get()),
+            dispatchersProvider = get(),
             mainRouter = get(),
             splashNavigationUseCase = get(),
             preferenceManager = get(),
             schedulersProvider = get(),
+            buildInfoProvider = get(),
         )
     }
 
@@ -68,8 +71,10 @@ val viewModelModule = module {
         val launchSource = LaunchSource.fromKey(parameters.get())
         ServerSetupViewModel(
             launchSource = launchSource,
+            dispatchersProvider = get(),
             getConfigurationUseCase = get(),
-            getLocalAiModelsUseCase = get(),
+            getLocalOnnxModelsUseCase = get(),
+            getLocalMediaPipeModelsUseCase = get(),
             fetchAndGetHuggingFaceModelsUseCase = get(),
             urlValidator = get(),
             stringValidator = get(),
@@ -81,20 +86,36 @@ val viewModelModule = module {
             preferenceManager = get(),
             wakeLockInterActor = get(),
             mainRouter = get(),
+            buildInfoProvider = get(),
         )
     }
 
     viewModel { parameters ->
         GalleryDetailViewModel(
             itemId = parameters.get(),
+            dispatchersProvider = get(),
             getGenerationResultUseCase = get(),
             getLastResultFromCacheUseCase = get(),
             deleteGalleryItemUseCase = get(),
+            toggleImageVisibilityUseCase = get(),
             galleryDetailBitmapExporter = get(),
             base64ToBitmapConverter = get(),
             schedulersProvider = get(),
             generationFormUpdateEvent = get(),
             mainRouter = get(),
+        )
+    }
+
+    viewModel { parameters ->
+        ReportViewModel(
+            itemId = parameters.get(),
+            sendReportUseCase = get(),
+            getGenerationResultUseCase = get(),
+            getLastResultFromCacheUseCase = get(),
+            base64ToBitmapConverter = get(),
+            mainRouter = get(),
+            schedulersProvider = get(),
+            buildInfoProvider = get(),
         )
     }
 }

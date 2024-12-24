@@ -5,7 +5,7 @@ import com.shifthackz.aisdv1.domain.entity.LocalAiModel
 import com.shifthackz.aisdv1.domain.entity.ServerSource
 import com.shifthackz.aisdv1.domain.entity.Settings
 import com.shifthackz.aisdv1.domain.preference.PreferenceManager
-import com.shifthackz.aisdv1.domain.usecase.downloadable.ObserveLocalAiModelsUseCase
+import com.shifthackz.aisdv1.domain.usecase.downloadable.ObserveLocalOnnxModelsUseCase
 import com.shifthackz.aisdv1.domain.usecase.huggingface.FetchAndGetHuggingFaceModelsUseCase
 import com.shifthackz.aisdv1.domain.usecase.sdmodel.GetStableDiffusionModelsUseCase
 import com.shifthackz.aisdv1.domain.usecase.sdmodel.SelectStableDiffusionModelUseCase
@@ -18,6 +18,7 @@ import com.shifthackz.aisdv1.presentation.mocks.mockLocalAiModels
 import com.shifthackz.aisdv1.presentation.mocks.mockStabilityAiEngines
 import com.shifthackz.aisdv1.presentation.mocks.mockStableDiffusionModels
 import com.shifthackz.aisdv1.presentation.mocks.mockSwarmUiModels
+import com.shifthackz.aisdv1.presentation.stub.stubDispatchersProvider
 import com.shifthackz.aisdv1.presentation.stub.stubSchedulersProvider
 import io.mockk.every
 import io.mockk.mockk
@@ -43,18 +44,19 @@ class EngineSelectionViewModelTest : CoreViewModelTest<EngineSelectionViewModel>
     private val stubGetConfigurationUseCase = mockk<GetConfigurationUseCase>()
     private val stubSelectStableDiffusionModelUseCase = mockk<SelectStableDiffusionModelUseCase>()
     private val stubGetStableDiffusionModelsUseCase = mockk<GetStableDiffusionModelsUseCase>()
-    private val stubObserveLocalAiModelsUseCase = mockk<ObserveLocalAiModelsUseCase>()
+    private val stubObserveLocalAiModelsUseCase = mockk<ObserveLocalOnnxModelsUseCase>()
     private val stubFetchAndGetStabilityAiEnginesUseCase = mockk<FetchAndGetStabilityAiEnginesUseCase>()
     private val stubFetchAndGetHuggingFaceModelsUseCase = mockk<FetchAndGetHuggingFaceModelsUseCase>()
     private val stubFetchAndGetSwarmUiModelsUseCase = mockk<FetchAndGetSwarmUiModelsUseCase>()
 
     override fun initializeViewModel() = EngineSelectionViewModel(
+        dispatchersProvider = stubDispatchersProvider,
         preferenceManager = stubPreferenceManager,
         schedulersProvider = stubSchedulersProvider,
         getConfigurationUseCase = stubGetConfigurationUseCase,
         selectStableDiffusionModelUseCase = stubSelectStableDiffusionModelUseCase,
         getStableDiffusionModelsUseCase = stubGetStableDiffusionModelsUseCase,
-        observeLocalAiModelsUseCase = stubObserveLocalAiModelsUseCase,
+        observeLocalOnnxModelsUseCase = stubObserveLocalAiModelsUseCase,
         fetchAndGetStabilityAiEnginesUseCase = stubFetchAndGetStabilityAiEnginesUseCase,
         getHuggingFaceModelsUseCase = stubFetchAndGetHuggingFaceModelsUseCase,
         fetchAndGetSwarmUiModelsUseCase = stubFetchAndGetSwarmUiModelsUseCase,
@@ -106,7 +108,7 @@ class EngineSelectionViewModelTest : CoreViewModelTest<EngineSelectionViewModel>
                 selectedHfModel = "prompthero/openjourney-v4",
                 stEngines = listOf("5598"),
                 selectedStEngine = "5598",
-                localAiModels = listOf(LocalAiModel.CUSTOM),
+                localAiModels = listOf(LocalAiModel.CustomOnnx),
                 selectedLocalAiModelId = "CUSTOM",
                 swarmModels = listOf("5598"),
                 selectedSwarmModel = "5598",
@@ -227,16 +229,16 @@ class EngineSelectionViewModelTest : CoreViewModelTest<EngineSelectionViewModel>
 
     @Test
     fun `given received EngineSelectionIntent, source is LOCAL, expected localModelId changed in preference`() {
-        mockInitialData(DataTestCase.Mock, ServerSource.LOCAL)
+        mockInitialData(DataTestCase.Mock, ServerSource.LOCAL_MICROSOFT_ONNX)
 
         every {
-            stubPreferenceManager::localModelId.set(any())
+            stubPreferenceManager::localOnnxModelId.set(any())
         } returns Unit
 
         viewModel.processIntent(EngineSelectionIntent("llm_5598"))
 
         verify {
-            stubPreferenceManager::localModelId.set("llm_5598")
+            stubPreferenceManager::localOnnxModelId.set("llm_5598")
         }
     }
 
@@ -260,7 +262,7 @@ class EngineSelectionViewModelTest : CoreViewModelTest<EngineSelectionViewModel>
                     huggingFaceModel = "prompthero/openjourney-v4",
                     stabilityAiEngineId = "5598",
                     swarmUiModel = "5598",
-                    localModelId = "CUSTOM",
+                    localOnnxModelId = "CUSTOM",
                     source = source,
                 ),
             )
